@@ -1,0 +1,17 @@
+{
+    "system" :
+    {
+        "pid_file" : "logs/bifang.pid",
+        "fiber_stack_size" : 1500000,
+        "tcp" :
+        {
+            "server_read_timeout" : 100000,
+            "connect_timeout" : 10000
+        }
+    },
+
+    "module" :
+    {
+        "path" : "libs/modules"
+    }
+}

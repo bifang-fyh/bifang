@@ -1,0 +1,33 @@
+.PHONY:modules clean
+
+CPP = g++
+CFLAGS = -std=c++11 -O1 -W -fPIC
+# -g
+CLIBS = -lbifang
+COBJS = objs/$1
+CPATH = module/$1
+SOFILE = $1.so
+
+#生成目标文件存放目录
+$(shell test -d $(COBJS) || mkdir $(COBJS))
+
+
+MODULE_OBJS = \
+	$(COBJS)/$1_module.o \
+	$(COBJS)/$1_servlet.o
+
+MODULE_DEPS = \
+	$(CPATH)/$1_module.h \
+	$(CPATH)/$1_servlet.h \
+	$(CPATH)/$1_config.h
+
+modules:$(MODULE_PATH)/$(SOFILE)
+
+$(MODULE_PATH)/$(SOFILE):$(MODULE_OBJS)
+	$(CPP) $(CFLAGS) $(SRC_INCS) $(CLIBS) -shared -o $@ $^
+
+$(COBJS)/%.o:$(CPATH)/%.cpp $(SRC_DEPS) $(MODULE_DEPS)
+	$(CPP) -c $(CFLAGS) $(SRC_INCS) $(CLIBS) $< -o $@
+
+clean:
+	rm -rf $(COBJS)/

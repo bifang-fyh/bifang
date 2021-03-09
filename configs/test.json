@@ -1,0 +1,61 @@
+{
+    "system" :
+    {
+        "int" : 5354,
+        "float" : 1024.578,
+        "string" : "qwerty.hehe",
+        "vector<int>":
+        [
+            453,
+            1,
+            31,
+            22
+        ],
+        "forward_list<int>" :
+        [
+            21,
+            122,
+            21,
+            43,
+            675
+        ],
+        "list<int>" :
+        [
+            21,
+            21,
+            21,
+            21,
+            38
+        ],
+        "set<int>" :
+        [
+            21,
+            321,
+            11,
+            28909,
+            276
+        ],
+        "unordered_set<int>" :
+        [
+            23,
+            111,
+            24565,
+            111,
+            28
+        ],
+        "map<std::string, int>" :
+        {
+            "str4" : 333,
+            "str2" : 222,
+            "str1" : 444,
+            "str8" : 111
+        },
+        "unordered_map<std::string, int>" :
+        {
+            "asd" : 444,
+            "dswqa" : 121,
+            "dasd" : 121231,
+            "qa1sd" : 2
+        }
+    }
+}

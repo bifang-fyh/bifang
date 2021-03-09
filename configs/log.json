@@ -1,0 +1,30 @@
+{
+    "logs" :
+    [
+        {
+            "name" : "root",
+            "level" : "debug",
+            "appenders" :
+            [
+                {
+                    "type" : "stdout",
+                    "level" : "debug",
+                    "formatter" : "%d{%Y-%m-%d %H:%M:%S}%T%r%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
+                }
+            ]
+        },
+
+        {
+            "name" : "system",
+            "level" : "debug",
+            "appenders" :
+            [
+                {
+                    "type" : "stdout",
+                    "level" : "debug",
+                    "formatter" : "%d{%Y-%m-%d %H:%M:%S}%T%r%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
+                }
+            ]
+        }
+    ]
+}

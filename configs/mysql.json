@@ -1,0 +1,23 @@
+{
+    "mysql" :
+    {
+        "sql1" : 
+        {
+            "host" : "192.168.31.130",
+            "port" : 3306,
+            "user" : "root",
+            "passwd" : "123456",
+            "dbname" : "test1",
+            "poolSize" : 15,
+        },
+        "sql2" : 
+        {
+            "host" : "192.168.31.130",
+            "port" : 3306,
+            "user" : "root",
+            "passwd" : "123456",
+            "dbname" : "test2",
+            "poolSize" : 10,
+        },
+    }
+}

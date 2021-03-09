@@ -1,0 +1,104 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>聊天室</title>
+    </head>
+    <script type="text/javascript">
+        var websocket = null;
+        var old_websocket = null;
+        var block = 0;
+
+        function write_msg(msg)
+        {
+            document.getElementById("message").innerHTML += msg + "<br/>"
+        }
+
+        function login()
+        {
+            if (block != 0)
+                return;
+
+            block = 1;
+
+            old_websocket = websocket;
+
+            websocket = new WebSocket("ws://20.200.26.76:8878/chat_room");
+            // ws://192.168.31.130:8878/chat_room
+
+            websocket.onopen = function()
+            {
+                var o = {};
+                o.type = "login_request";
+                o.name = document.getElementById('tname').value;
+                websocket.send(JSON.stringify(o));
+            }
+
+            websocket.onmessage = function(e)
+            {
+                var o = JSON.parse(e.data);
+                
+                if (o.type == "user_enter")
+                {
+                    write_msg("[" + o.time + "][" + o.name + "] 加入聊天室");
+                }
+                else if (o.type == "user_leave")
+                {
+                    write_msg("[" + o.time + "][" + o.name + "] 离开聊天室");
+                }
+                else if (o.type == "msg")
+                {
+                    write_msg("[" + o.time + "][" + o.name + "] " + o.msg);
+                }
+                else if (o.type == "login_response")
+                {
+                    write_msg(o.msg);
+                    if (o.result != "200") // 登录失败
+                    {
+                        if (websocket != null)
+                        {
+                            websocket.onclose = function(){}
+                            websocket.close();
+                        }
+
+                        websocket = old_websocket;
+                    }
+                    else
+                    {
+                        if (old_websocket != null)
+                        {
+                            old_websocket.onmessage = function(){}
+                            old_websocket.onclose = function(){}
+                            old_websocket.close();
+                        }
+                    }
+                    block = 0;
+                }
+            }
+
+            websocket.onerror = function()
+            {
+                write_msg("onerror");
+            }
+
+            websocket.onclose = function()
+            {
+                write_msg("服务器断开");
+            }
+        }
+
+        function sendmsg()
+        {
+            var o = {}
+            o.type = "send_request";
+            o.msg = document.getElementById('msg').value;
+            websocket.send(JSON.stringify(o));
+        }
+    </script>
+    <body>
+        <center>
+            用户名称:<input id="tname" type="text"/><button onclick="login()">登录</button><br/>
+            聊天内容:<input id="msg" type="text"/><button onclick="sendmsg()">发送</button><br/>
+        </center>
+        <div id="message"></div>
+    </body>
+</html>

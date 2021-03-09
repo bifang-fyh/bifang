@@ -1,0 +1,50 @@
+{
+    "servers" :
+    [
+        {
+            "type" : "http",
+            "name" : "bifang-http/1.0.0",
+            "ssl" : 0,
+            "keepalive" : 1,
+            "timeout" : 110000,
+            "address" :
+            [
+                "0.0.0.0:8888",
+                "127.0.0.1:8889"
+            ],
+
+            "gzip" : 1,
+            "gzip_min_length" : 1024,
+            "gzip_comp_level" : -1,
+
+            "cert_file" : "configs/cert/server.crt",
+            "key_file" : "configs/cert/server.key",
+            "accept_worker" : "accept",
+            "process_worker" : "http_process"
+        },
+
+        {
+            "type" : "ws",
+            "name" : "bifang-websocket/1.0.0",
+            "ssl" : 0,
+            "keepalive" : 1,
+            "timeout" : 100000,
+            "address" : 
+            [
+                "0.0.0.0:8878",
+                "127.0.0.1:8879"
+            ],
+            "cert_file" : "configs/cert/server.crt",
+            "key_file" : "configs/cert/server.key",
+            "accept_worker" : "accept",
+            "process_worker" : "ws_process"
+        }
+    ],
+
+    "workers" :
+    {
+        "accept" : 2,
+        "http_process" : 8,
+        "ws_process" : 1
+    }
+}
