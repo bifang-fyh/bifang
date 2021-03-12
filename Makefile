@@ -10,7 +10,8 @@ $(shell test -d libs || mkdir libs)
 CPP = g++
 CFLAGS = -std=c++11 -pipe -O1 -W -fPIC
 # -g
-CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto -lmysqlclient
+CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto
+# -lmysqlclient
 DYNAMIC_PATH = libs/libbifang.so
 
 SRC_OBJS = \

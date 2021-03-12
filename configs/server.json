@@ -9,8 +9,7 @@
             "timeout" : 110000,
             "address" :
             [
-                "0.0.0.0:8888",
-                "127.0.0.1:8889"
+                "0.0.0.0:80",
             ],
 
             "gzip" : 1,
@@ -32,7 +31,6 @@
             "address" : 
             [
                 "0.0.0.0:8878",
-                "127.0.0.1:8879"
             ],
             "cert_file" : "configs/cert/server.crt",
             "key_file" : "configs/cert/server.key",
@@ -44,7 +42,7 @@
     "workers" :
     {
         "accept" : 2,
-        "http_process" : 8,
+        "http_process" : 4,
         "ws_process" : 1
     }
 }

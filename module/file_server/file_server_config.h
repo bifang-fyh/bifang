@@ -20,7 +20,7 @@ namespace file_server
 //#define LIMIT_RATE        (88)
 //#define LIMIT_RATE_AFTER  (10 * 1024)
 
-#define ROOT_PATH    "/home/test_smb"
+#define ROOT_PATH    "/home/bifang/src"
 
 }
 

@@ -4,6 +4,8 @@
 #ifndef __BIFANG_MYSQL_H
 #define __BIFANG_MYSQL_H
 
+#ifdef MYSQL_ENABLE
+
 #include <functional>
 #include <vector>
 #include <list>
@@ -659,4 +661,7 @@ namespace MySQLUtil
 
 }
 
+#endif
+
 #endif /*__BIFANG_MYSQL_H*/
+

@@ -2,6 +2,7 @@
 #include "log.h"
 #include "Assert.h"
 
+#ifdef MYSQL_ENABLE
 
 namespace bifang
 {
@@ -736,3 +737,6 @@ void checkConnection(int sec)
 }
 
 }
+
+#endif
+
