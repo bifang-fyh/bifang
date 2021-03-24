@@ -18,7 +18,7 @@
 
 ### 编译
 
-1.系统的依赖有zlib, openssl, boost还有mysqlclient等, g++必须支持c++11, 可直接编译一下然后查看报错信息逐个安装依赖, mysql不同版本有所区别, 默认屏蔽了mysql相关的代码
+1.系统的依赖有zlib, openssl, boost还有mysqlclient等, g++必须支持c++11, 可直接编译一下然后查看报错信息逐个安装依赖, mysql不同版本有所区别, 可以自行屏蔽mysql相关的代码来调试, 安装mysql的话要把整套依赖安装全
 
 2.进入源代码根目录, 执行make命令, Makefile将源文件链接生成为libs/libbifang.so文件, 并自动连接生成可执行文件bifang, 测试文件server和client(可自行修改Makefile文件以阻止这些可执行文件生成)
 

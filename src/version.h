@@ -5,7 +5,7 @@
 
 #define USE_EPOLL
 
-//#define MySQL_ENABLE
+#define MYSQL_ENABLE
 
 
 #endif /*__BIFANG_VERSION_H*/

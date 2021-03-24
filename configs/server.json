@@ -41,8 +41,8 @@
 
     "workers" :
     {
-        "accept" : 2,
-        "http_process" : 4,
+        "accept" : 4,
+        "http_process" : 6,
         "ws_process" : 1
     }
 }

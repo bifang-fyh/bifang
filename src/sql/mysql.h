@@ -4,8 +4,6 @@
 #ifndef __BIFANG_MYSQL_H
 #define __BIFANG_MYSQL_H
 
-#ifdef MYSQL_ENABLE
-
 #include <functional>
 #include <vector>
 #include <list>
@@ -21,6 +19,8 @@
 #include "lock.h"
 #include "config.h"
 
+
+#ifdef MYSQL_ENABLE
 
 namespace bifang
 {
@@ -51,13 +51,19 @@ struct MySQLNull
  */
 std::string mysql_bind_to_string(const MYSQL_BIND& bind);
 
+/**
+ * brief: 将MYSQL_TIME转换为时间戳
+ */
 time_t mysql_time_to_time_t(const MYSQL_TIME& mt);
 
+/**
+ * brief: 将时间戳转换为MYSQL_TIME
+ */
 MYSQL_TIME time_t_to_mysql_time(const time_t& ts);
 
 
 /**
- * brief: MySQL查询结果集类(不要自己去初始化它, 通过调用MySQL类来获取结果集)
+ * brief: MySQL查询结果集类
  */
 class MySQLRes
 {
@@ -83,11 +89,43 @@ public:
         return !!m_cur;
     }
 
-    MYSQL_RES* get()        const { return m_data.get();                   }
-    int getRows()           const { return mysql_num_rows(m_data.get());   }
-    int getFields()         const { return mysql_num_fields(m_data.get()); }
-    int getLengths(int idx) const { return m_curLength[idx];               }
+    /**
+     * brief: 获取原始结果集
+     */
+    MYSQL_RES* get() const { return m_data.get(); }
 
+    /**
+     * brief: 获取结果集的行数
+     */
+    int getRows() const { return mysql_num_rows(m_data.get()); }
+
+    /**
+     * brief: 获取结果集每一列的名称
+     * param: v 查询结果字段列表
+     */
+    void getFieldList(std::vector<std::string>& v)
+    {
+        int len = mysql_num_fields(m_data.get());
+        MYSQL_FIELD* fields = mysql_fetch_fields(m_data.get());
+        for (int i = 0; i < len; i++)
+            v.push_back(std::string(fields[i].name, fields[i].name_length));
+    }
+
+    /**
+     * brief: 获取结果集当前行的所有数据(string)
+     * param: v 查询结果列表
+     */
+    void getResList(std::vector<std::string>& v)
+    {
+        int len = mysql_num_fields(m_data.get());
+        for (int i = 0; i < len; i++)
+            v.push_back(std::string(m_cur[i], m_curLength[i]));
+    }
+
+public:
+    /**
+     * brief: 获取结果集指定列的数据
+     */
     bool isNull(int idx)        const { return m_cur[idx] ? false : true; }
     int8_t getInt8(int idx)     const { return getInt64(idx);             }
     uint8_t getUint8(int idx)   const { return getInt64(idx);             }
@@ -113,7 +151,7 @@ private:
 };
 
 /**
- * brief: MySQL预处理查询结果集类(不要自己去初始化它, 通过调用Create来获取结果集)
+ * brief: MySQL预处理查询结果集类(由于需要事先分配储存结果的内存, 所以需要在建表时需要确认数据长度(int, float之类的数据不需要), 不然无法使用该功能)
  */
 class MySQLStmtRes
 {
@@ -134,10 +172,23 @@ public:
      */
     bool next();
 
+    /**
+     * brief: 获取结果集的行数
+     */
     uint64_t getRows();
-    uint32_t getFields();
-    uint64_t getLengths(int idx)      const { return m_datas[idx].length;      }
-    enum_field_types getType(int idx) const { return m_datas[idx].buffer_type; }
+
+    /**
+     * brief: 获取结果集每一列的名称
+     * param: v 查询结果字段列表
+     */
+    void getFieldList(std::vector<std::string>& v);
+
+    /**
+     * brief: 获取结果集当前行的所有数据(string)
+     * param: v 查询结果列表
+     *        is_convert 是否将时间类型转换为可读性的字符串
+     */
+    void getResList(std::vector<std::string>& v, bool is_convert = true);
 
 #define XX(type) \
     return *(type*)m_datas[idx].buffer
@@ -179,13 +230,8 @@ private:
         }
 
         uint64_t length = 0;
-#if MySQL_version
         bool is_null = false;
         bool error = false;
-#else
-        my_bool is_null = false;
-        my_bool error = false;
-#endif
         char* buffer = nullptr;
         uint64_t buffer_length = 0;
         enum_field_types buffer_type = MYSQL_TYPE_NULL;
@@ -245,11 +291,7 @@ public:
      *        字段的表上执行了预处理语句后使用
      * return: 更新或插入字段自动生成的值
      */
-    uint64_t getInsertId() const
-    {
-        return mysql_stmt_insert_id(m_stmt);
-    }
-
+    uint64_t getInsertId() const { return mysql_stmt_insert_id(m_stmt); }
     MYSQL_STMT* get() const { return m_stmt; }
     std::vector<MYSQL_BIND>& getBinds() { return m_binds; }
 
@@ -258,22 +300,14 @@ public:
      * return: true  - 成功
      *         false - 失败
      */
-    bool execute()
-    {
-        mysql_stmt_bind_param(m_stmt, &m_binds[0]);
-        return !!mysql_stmt_execute(m_stmt);
-    }
+    bool execute();
 
     /**
      * brief: 执行预处理查询(先绑参数后执行)
      * return: MySQLStmtRes智能指针 - 成功
      *         nullptr - 失败
      */
-    MySQLStmtRes::ptr query()
-    {
-        mysql_stmt_bind_param(m_stmt, &m_binds[0]);
-        return MySQLStmtRes::create(shared_from_this());
-    }
+    MySQLStmtRes::ptr query();
 
     /**
      * brief: 输出当前绑定参数信息
@@ -422,31 +456,31 @@ public:
         uint32_t poolSize = 10);
 
 public:
-#define XX(ret) \
-    if (!m_mysql) \
-        return ret
-
     uint32_t getErrno() const
     {
-        XX(-1);
+        if (!m_mysql)
+            return -1;
         return mysql_errno(m_mysql.get());
     }
     std::string getErrstr() const
     {
-        XX("mysql is not init");
+        if (!m_mysql)
+            return "mysql is not init";
         const char* str = mysql_error(m_mysql.get());
         return str ? str : "";
     }
 
     uint64_t getInsertId() const
     {
-        XX(0);
+        if (!m_mysql)
+            return 0;
         return mysql_insert_id(m_mysql.get());
     }
 
     uint64_t getAffectedRows() const
     {
-        XX(0);
+        if (!m_mysql)
+            return 0;
         return mysql_affected_rows(m_mysql.get());
     }
 
@@ -456,8 +490,6 @@ public:
     {
         return !((time(0) - m_lastUsedTime) < 5 && !m_hasError);
     }
-
-#undef XX
 
 public:
     /**
@@ -482,19 +514,12 @@ public:
      */
     bool use(const std::string& dbname);
 
-    int execute(const char* format, ...);
-    int execute(const std::string& cmd);
+    bool execute(const char* format, ...);
+    bool execute(const std::string& cmd);
 
     MySQLRes::ptr query(const char* format, ...);
     MySQLRes::ptr query(const std::string& cmd);
 
-    /**
-     * brief: 创建一个当前sql的事务
-     * param: auto_commit 是否自动提交事务
-     * return: MySQLTransaction智能指针 - 成功
-     *         nullptr - 失败
-     */
-    std::shared_ptr<MySQLTransaction> openTransaction(bool auto_commit);
     /**
      * brief: 创建一个当前sql的预处理
      * param: cmd 预处理指令
@@ -502,6 +527,13 @@ public:
      *         nullptr - 失败
      */
     MySQLStmt::ptr openPrepare(const std::string& cmd);
+    /**
+     * brief: 创建一个当前sql的事务
+     * param: auto_commit 是否自动提交事务
+     * return: MySQLTransaction智能指针 - 成功
+     *         nullptr - 失败
+     */
+    std::shared_ptr<MySQLTransaction> openTransaction(bool auto_commit);
 
 private:
     // 连接信息
@@ -559,19 +591,19 @@ public:
 
     bool begin()
     {
-        return !execute("BEGIN");
+        return execute("BEGIN");
     }
     bool commit()
     {
         if (m_isFinished || m_hasError)
             return !m_hasError;
 
-        int ret = execute("COMMIT");
-        if (!ret)
+        bool ret = execute("COMMIT");
+        if (ret)
             m_isFinished = true;
         else
             m_hasError = true;
-        return !ret;
+        return ret;
     }
     bool rollback()
     {
@@ -579,15 +611,15 @@ public:
             return true;
 
         int ret = execute("ROLLBACK");
-        if (!ret)
+        if (ret)
             m_isFinished = true;
         else
             m_hasError = true;
-        return !ret;
+        return ret;
     }
 
-    int execute(const char* format, ...);
-    int execute(const std::string& cmd);
+    bool execute(const char* format, ...);
+    bool execute(const std::string& cmd);
 
 private:
     // 持有MySQL类的智能指针
@@ -618,15 +650,15 @@ public:
 
     MySQL::ptr get(const std::string& name);
 
-    int execute(const std::string& name, const char* format, ...);
-    int execute(const std::string& name, const std::string& cmd);
+    bool execute(const std::string& name, const char* format, ...);
+    bool execute(const std::string& name, const std::string& cmd);
 
     MySQLRes::ptr query(const std::string& name, const char* format, ...);
     MySQLRes::ptr query(const std::string& name, const std::string& cmd);
 
-    MySQLTransaction::ptr openTransaction(const std::string& name, bool auto_commit);
-
     MySQLStmt::ptr openPrepare(const std::string& name, const std::string& cmd);
+
+    MySQLTransaction::ptr openTransaction(const std::string& name, bool auto_commit);
 
     void checkConnection(int sec = 30);
 
@@ -646,15 +678,15 @@ typedef bifang::Singleton<MySQLManager> MySQLMgr;
 
 namespace MySQLUtil
 {
-    int execute(const std::string& name, const char* format, ...);
-    int execute(const std::string& name, const std::string& cmd);
+    bool execute(const std::string& name, const char* format, ...);
+    bool execute(const std::string& name, const std::string& cmd);
 
     mysql::MySQLRes::ptr query(const std::string& name, const char* format, ...);
     mysql::MySQLRes::ptr query(const std::string& name, const std::string& cmd);
 
-    mysql::MySQLTransaction::ptr openTransaction(const std::string& name, bool auto_commit);
-
     mysql::MySQLStmt::ptr openPrepare(const std::string& name, const std::string& cmd);
+
+    mysql::MySQLTransaction::ptr openTransaction(const std::string& name, bool auto_commit);
 
     void checkConnection(int sec = 30);
 }

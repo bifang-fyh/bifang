@@ -17,7 +17,7 @@ int32_t IndexHtmlServlet::handle(bifang::http::HttpRequest::ptr request,
                               bifang::http::HttpSession::ptr session)
 {
     std::string sub_path = bifang::StringUtil::findSubPath(request->getPath(), URI_PATH);
-    if (sub_path.empty()) // ÖØ¶¨ÏòÒ³Ãæ(302)
+    if (sub_path.empty()) // é‡å®šå‘é¡µé¢(302)
     {
         response->setLocation(request, request->getPath() + "/");
         response->setStatus(bifang::http::HttpStatus::FOUND);

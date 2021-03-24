@@ -9,9 +9,8 @@ $(shell test -d libs || mkdir libs)
 
 CPP = g++
 CFLAGS = -std=c++11 -pipe -O1 -W -fPIC
-# -g
-CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto
-# -lmysqlclient
+#-g
+CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto -lmysqlclient
 DYNAMIC_PATH = libs/libbifang.so
 
 SRC_OBJS = \
@@ -149,7 +148,7 @@ server:objs/socket_server_test.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成客户端测试代码
-client:objs/socket_client_test.o shared $(SRC_DEPS) 
+client:objs/mysql_test.o shared $(SRC_DEPS) 
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成测试代码的.o文件
