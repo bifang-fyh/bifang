@@ -8,6 +8,21 @@ namespace bifang
 
 SystemLogger();
 
+namespace terminal
+{
+
+void set_color(Color c)
+{
+    printf("\033[01;%dm", c);
+}
+
+void reset_color()
+{
+    printf("\033[0m");
+}
+
+}
+
 void printError(const std::string& s)
 {
     log_error << s;

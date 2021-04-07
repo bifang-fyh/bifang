@@ -62,6 +62,6 @@
 
 // sql库
 #include "sql/mysql.h"
-
+#include "sql/redis.h"
 
 #endif /*__BIFANG_H*/

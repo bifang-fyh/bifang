@@ -717,6 +717,77 @@ struct LexicalCast<MySqlConf, std::string>
     }
 };
 
+/**
+ * brief: Redis服务配置类
+ */
+struct RedisConf
+{
+    typedef std::shared_ptr<RedisConf> ptr;
+
+    std::string host;
+    int port;
+    std::string passwd;
+    uint32_t connect_timeout = 100;
+    uint32_t cmd_timeout = 100;
+    uint32_t poolSize = 10;
+
+    bool operator==(const RedisConf& oth) const
+    {
+        return host == oth.host
+            && port == oth.port
+            && passwd == oth.passwd
+            && connect_timeout == oth.connect_timeout
+            && cmd_timeout == oth.cmd_timeout
+            && poolSize == oth.poolSize;
+    }
+};
+
+template<>
+struct LexicalCast<std::string, RedisConf>
+{
+    RedisConf operator()(const std::string& v)
+    {
+        SEQUENCE(root, v, "json string(RedisConf) is illegal!");
+
+        RedisConf conf;
+        if (root.isMember("host"))
+            conf.host = root["host"].asString();
+
+        if (root.isMember("port"))
+            conf.port = root["port"].asInt();
+
+        if (root.isMember("passwd"))
+            conf.passwd = root["passwd"].asString();
+
+        if (root.isMember("connect_timeout"))
+            conf.connect_timeout = root["connect_timeout"].asInt();
+
+        if (root.isMember("cmd_timeout"))
+            conf.cmd_timeout = root["cmd_timeout"].asInt();
+
+        if (root.isMember("poolSize"))
+            conf.poolSize = root["poolSize"].asInt();
+
+        return conf;
+    }
+};
+
+template<>
+struct LexicalCast<RedisConf, std::string>
+{
+    std::string operator()(const RedisConf& conf)
+    {
+        Json::Value root;
+        root["host"] = conf.host;
+        root["port"] = conf.port;
+        root["passwd"] = conf.passwd;
+        root["connect_timeout"] = conf.connect_timeout;
+        root["cmd_timeout"] = conf.cmd_timeout;
+        root["poolSize"] = conf.poolSize;
+
+        RESEQUENCE(root);
+    }
+};
 
 /**
  * brief: 配置基类

@@ -10,7 +10,7 @@ $(shell test -d libs || mkdir libs)
 CPP = g++
 CFLAGS = -std=c++11 -pipe -O1 -W -fPIC
 #-g
-CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto -lmysqlclient
+CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto -lmysqlclient -lhiredis
 DYNAMIC_PATH = libs/libbifang.so
 
 SRC_OBJS = \
@@ -63,7 +63,8 @@ SRC_OBJS = \
 	objs/ws_servlet.o \
 	objs/ws_server.o \
 	\
-	objs/mysql.o
+	objs/mysql.o \
+	objs/redis.o
 
 SRC_DEPS = \
 	src/version.h \
@@ -119,7 +120,8 @@ SRC_DEPS = \
 	src/ws/ws_servlet.h \
 	src/ws/ws_server.h \
 	\
-	src/sql/mysql.h
+	src/sql/mysql.h \
+	src/sql/redis.h
 
 SRC_INCS = \
 	-I src \
@@ -130,6 +132,7 @@ SRC_INCS = \
 	-I src/sql \
 	-L libs \
 	-L /usr/lib64/mysql \
+	-L /usr/lib64 \
 	-Wl,--copy-dt-needed-entries \
 	-Wl,-rpath=libs
 
@@ -144,11 +147,11 @@ bifang:objs/bifang.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成服务端测试代码
-server:objs/socket_server_test.o shared $(SRC_DEPS)
+server:objs/mysql_test.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成客户端测试代码
-client:objs/mysql_test.o shared $(SRC_DEPS) 
+client:objs/redis_test.o shared $(SRC_DEPS) 
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成测试代码的.o文件

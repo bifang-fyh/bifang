@@ -7,5 +7,7 @@
 
 #define MYSQL_ENABLE
 
+#define REDIS_ENABLE
+
 
 #endif /*__BIFANG_VERSION_H*/

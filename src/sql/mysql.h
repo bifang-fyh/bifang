@@ -18,7 +18,8 @@
 #include "version.h"
 #include "lock.h"
 #include "config.h"
-
+#include "log.h"
+#include "Assert.h"
 
 #ifdef MYSQL_ENABLE
 
@@ -71,10 +72,9 @@ public:
     typedef std::shared_ptr<MySQLRes> ptr;
 
     MySQLRes(MYSQL_RES* res)
-        :m_cur(nullptr)
-        ,m_curLength(nullptr)
     {
-        m_data.reset(res, mysql_free_result);
+        m_res.reset(res, mysql_free_result);
+        setFields();
     }
 
     /**
@@ -84,70 +84,111 @@ public:
      */
     bool next()
     {
-        m_cur = mysql_fetch_row(m_data.get());
-        m_curLength = mysql_fetch_lengths(m_data.get());
-        return !!m_cur;
+        SystemLogger();
+        if (m_fields.empty())
+        {
+            log_error << "the query results have no fields!";
+            return false;
+        }
+        // 数据集当前指向的行数据(MYSQL_ROW = char**)
+        MYSQL_ROW cur = mysql_fetch_row(m_res.get());
+        // 当前行每一列的数据长度
+        unsigned long* curLength = mysql_fetch_lengths(m_res.get());
+        if (!cur)
+            return false;
+
+        int len = mysql_num_fields(m_res.get());
+        for (int i = 0; i < len; i++)
+        {
+            if (m_datas[m_fields[i]])
+            {
+                delete m_datas[m_fields[i]];
+                m_datas[m_fields[i]] = nullptr;
+            }
+            if (cur[i])
+                m_datas[m_fields[i]] = new std::string(cur[i], curLength[i]);
+        }
+        return true;
     }
 
     /**
      * brief: 获取原始结果集
      */
-    MYSQL_RES* get() const { return m_data.get(); }
+    MYSQL_RES* get() const { return m_res.get(); }
 
     /**
      * brief: 获取结果集的行数
      */
-    int getRows() const { return mysql_num_rows(m_data.get()); }
+    int getRows() const { return mysql_num_rows(m_res.get()); }
 
     /**
      * brief: 获取结果集每一列的名称
-     * param: v 查询结果字段列表
      */
-    void getFieldList(std::vector<std::string>& v)
-    {
-        int len = mysql_num_fields(m_data.get());
-        MYSQL_FIELD* fields = mysql_fetch_fields(m_data.get());
-        for (int i = 0; i < len; i++)
-            v.push_back(std::string(fields[i].name, fields[i].name_length));
-    }
+    const std::vector<std::string>& getFields() const { return m_fields; }
 
+private:
     /**
-     * brief: 获取结果集当前行的所有数据(string)
-     * param: v 查询结果列表
+     * brief: 得到结果集每一列的名称并写入m_fields中
      */
-    void getResList(std::vector<std::string>& v)
+    void setFields()
     {
-        int len = mysql_num_fields(m_data.get());
+        if (!m_fields.empty())
+            return;
+        int len = mysql_num_fields(m_res.get());
+        MYSQL_FIELD* fields = mysql_fetch_fields(m_res.get());
         for (int i = 0; i < len; i++)
-            v.push_back(std::string(m_cur[i], m_curLength[i]));
+        {
+            std::string name = std::string(fields[i].name, fields[i].name_length);
+            m_fields.push_back(name);
+            m_datas[name] = nullptr;
+        }
     }
 
 public:
-    /**
-     * brief: 获取结果集指定列的数据
-     */
-    bool isNull(int idx)        const { return m_cur[idx] ? false : true; }
-    int8_t getInt8(int idx)     const { return getInt64(idx);             }
-    uint8_t getUint8(int idx)   const { return getInt64(idx);             }
-    int16_t getInt16(int idx)   const { return getInt64(idx);             }
-    uint16_t getUint16(int idx) const { return getInt64(idx);             }
-    int32_t getInt32(int idx)   const { return getInt64(idx);             }
-    uint32_t getUint32(int idx) const { return getInt64(idx);             }
-    int64_t getInt64(int idx)   const { return atoll(m_cur[idx]);         }
-    uint64_t getUint64(int idx) const { return getInt64(idx);             }
-    float getFloat(int idx)     const { return getDouble(idx);            }
-    double getDouble(int idx)   const { return atof(m_cur[idx]);          }
-    std::string getString(int idx) const { return std::string(m_cur[idx], m_curLength[idx]); }
-    std::string getBlob(int idx)   const { return std::string(m_cur[idx], m_curLength[idx]); }
-    time_t getTime(int idx)      const { return m_cur[idx] ? string_to_time(m_cur[idx]) : 0; }
+#define XX() \
+    auto it = m_datas.find(name); \
+    if (it == m_datas.end()) \
+        throw "field(" + name + ") is not exist!"
+
+    bool isNull(const std::string& name) const
+    {
+        XX();
+        return !it->second;
+    }
+    int getInt(const std::string& name) const
+    {
+        XX();
+        return atol((*it->second).c_str());
+    }
+    int64_t getInt64(const std::string& name) const
+    {
+        XX();
+        return atoll((*it->second).c_str());
+    }
+    float getFloat(const std::string& name) const
+    {
+        XX();
+        return atof((*it->second).c_str());
+    }
+    double getDouble(const std::string& name) const
+    {
+        XX();
+        return atof((*it->second).c_str());
+    }
+    std::string getString(const std::string& name) const
+    {
+        XX();
+        return *it->second;
+    }
+#undef XX
 
 private:
-    // 数据集当前指向的行数据(MYSQL_ROW = char**)
-    MYSQL_ROW m_cur;
-    // 当前行每一列的数据长度
-    unsigned long* m_curLength;
+    // 结果集列名
+    std::vector<std::string> m_fields;
+    // 结果集数据
+    std::unordered_map<std::string, std::string*> m_datas;
     // MYSQL结果集智能指针
-    std::shared_ptr<MYSQL_RES> m_data;
+    std::shared_ptr<MYSQL_RES> m_res;
 };
 
 /**
@@ -179,33 +220,110 @@ public:
 
     /**
      * brief: 获取结果集每一列的名称
-     * param: v 查询结果字段列表
      */
-    void getFieldList(std::vector<std::string>& v);
+    const std::vector<std::string>& getFields() { return m_fields; }
 
-    /**
-     * brief: 获取结果集当前行的所有数据(string)
-     * param: v 查询结果列表
-     *        is_convert 是否将时间类型转换为可读性的字符串
-     */
-    void getResList(std::vector<std::string>& v, bool is_convert = true);
+public:
+#define XX() \
+    auto it = m_datas.find(name); \
+    if (it == m_datas.end()) \
+        throw "field(" + name + ") is not exist!"
 
-#define XX(type) \
-    return *(type*)m_datas[idx].buffer
-    bool isNull(int idx)        const { return m_datas[idx].is_null; }
-    int8_t getInt8(int idx)     const { XX(int8_t);                  }
-    uint8_t getUint8(int idx)   const { XX(uint8_t);                 }
-    int16_t getInt16(int idx)   const { XX(int16_t);                 }
-    uint16_t getUint16(int idx) const { XX(uint16_t);                }
-    int32_t getInt32(int idx)   const { XX(int32_t);                 }
-    uint32_t getUint32(int idx) const { XX(uint32_t);                }
-    int64_t getInt64(int idx)   const { XX(int64_t);                 }
-    uint64_t getUint64(int idx) const { XX(uint64_t);                }
-    float getFloat(int idx)     const { XX(float);                   }
-    double getDouble(int idx)   const { XX(double);                  }
-    std::string getString(int idx) const { return std::string(m_datas[idx].buffer, m_datas[idx].length); }
-    std::string getBlob(int idx)   const { return std::string(m_datas[idx].buffer, m_datas[idx].length); }
-    time_t getTime(int idx)      const { return mysql_time_to_time_t(*(MYSQL_TIME*)m_datas[idx].buffer); }
+    bool isNull(const std::string& name) const
+    {
+        XX();
+        return it->second.is_null;
+    }
+    int8_t getInt8(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_TINY)
+            return *(int8_t*)it->second.buffer;
+        std::string str = getString(name);
+        return atol(str.c_str());
+    }
+    int16_t getInt16(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_SHORT)
+            return *(int16_t*)it->second.buffer;
+        std::string str = getString(name);
+        return atol(str.c_str());
+    }
+    int32_t getInt32(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_LONG)
+            return *(int32_t*)it->second.buffer;
+        std::string str = getString(name);
+        return atol(str.c_str());
+    }
+    int64_t getInt64(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_LONGLONG)
+            return *(int64_t*)it->second.buffer;
+        std::string str = getString(name);
+        return atoll(str.c_str());
+    }
+    float getFloat(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_FLOAT)
+            return *(float*)it->second.buffer;
+        std::string str = getString(name);
+        return atof(str.c_str());
+    }
+    double getDouble(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_DOUBLE)
+            return *(double*)it->second.buffer;
+        std::string str = getString(name);
+        return atof(str.c_str());
+    }
+    std::string getString(const std::string& name, bool is_convert = false) const
+    {
+        XX();
+        switch (it->second.buffer_type)
+        {
+            case MYSQL_TYPE_TINY:
+                return std::to_string(*(int8_t*)it->second.buffer);
+            case MYSQL_TYPE_SHORT:
+                return std::to_string(*(int16_t*)it->second.buffer);
+            case MYSQL_TYPE_LONG:
+                return std::to_string(*(int32_t*)it->second.buffer);
+            case MYSQL_TYPE_LONGLONG:
+                return std::to_string(*(int64_t*)it->second.buffer);
+            case MYSQL_TYPE_FLOAT:
+                return std::to_string(*(float*)it->second.buffer);
+            case MYSQL_TYPE_DOUBLE:
+                return std::to_string(*(double*)it->second.buffer);
+            case MYSQL_TYPE_TIMESTAMP:
+            case MYSQL_TYPE_DATETIME:
+            case MYSQL_TYPE_DATE:
+            case MYSQL_TYPE_TIME:
+            {
+                time_t t = mysql_time_to_time_t(*(MYSQL_TIME*)it->second.buffer);
+                if (is_convert)
+                    return time_to_string(t);
+                else
+                    return std::to_string(t);
+            }
+            default:
+                return std::string(it->second.buffer, it->second.length);
+        }
+    }
+    time_t getTime(const std::string& name) const
+    {
+        XX();
+        if (it->second.buffer_type == MYSQL_TYPE_TIMESTAMP ||
+            it->second.buffer_type == MYSQL_TYPE_DATETIME  ||
+            it->second.buffer_type == MYSQL_TYPE_DATE      ||
+            it->second.buffer_type == MYSQL_TYPE_TIME)
+            return mysql_time_to_time_t(*(MYSQL_TIME*)it->second.buffer);
+         return 0;
+    }
 #undef XX
 
 private:
@@ -242,8 +360,10 @@ private:
     std::shared_ptr<MySQLStmt> m_stmt;
     // 绑定参数(相当于壳)
     std::vector<MYSQL_BIND> m_binds;
-    // 绑定参数的内容
-    std::vector<Data> m_datas;
+    // 结果集列名
+    std::vector<std::string> m_fields;
+    // 结果集数据
+    std::unordered_map<std::string, Data> m_datas;
 };
 
 /**
@@ -414,7 +534,6 @@ public:
     {
         //std::cout << "multibind end" << std::endl;
     }
-
     template<typename... Args>
     void binder(size_t N, const void* value, uint64_t size, Args... args)
     {
@@ -423,7 +542,6 @@ public:
         bind(N, value, size);
         binder(N + 1, args...);
     }
-
     template<typename T, typename... Args>
     void binder(size_t N, T value, Args... args)
     {
@@ -488,7 +606,7 @@ public:
 
     bool needToCheck() const
     {
-        return !((time(0) - m_lastUsedTime) < 5 && !m_hasError);
+        return !(time(0) - m_lastUsedTime < 30 && !m_hasError);
     }
 
 public:
@@ -515,10 +633,8 @@ public:
     bool use(const std::string& dbname);
 
     bool execute(const char* format, ...);
-    bool execute(const std::string& cmd);
 
     MySQLRes::ptr query(const char* format, ...);
-    MySQLRes::ptr query(const std::string& cmd);
 
     /**
      * brief: 创建一个当前sql的预处理
@@ -553,6 +669,7 @@ private:
     uint64_t m_lastUsedTime = 0;
     // 是否有错误
     bool m_hasError = false;
+    // 最大连接数
     uint32_t m_poolSize;
 };
 
@@ -619,7 +736,6 @@ public:
     }
 
     bool execute(const char* format, ...);
-    bool execute(const std::string& cmd);
 
 private:
     // 持有MySQL类的智能指针
@@ -644,17 +760,15 @@ public:
 
     ~MySQLManager();
 
-    bool add(const std::string& name, const std::string& host, int port,
+    void add(const std::string& name, const std::string& host, int port,
         const std::string& user, const std::string& passwd,
         const std::string& dbname, uint32_t poolSize = 10);
 
     MySQL::ptr get(const std::string& name);
 
     bool execute(const std::string& name, const char* format, ...);
-    bool execute(const std::string& name, const std::string& cmd);
 
     MySQLRes::ptr query(const std::string& name, const char* format, ...);
-    MySQLRes::ptr query(const std::string& name, const std::string& cmd);
 
     MySQLStmt::ptr openPrepare(const std::string& name, const std::string& cmd);
 
@@ -679,10 +793,8 @@ typedef bifang::Singleton<MySQLManager> MySQLMgr;
 namespace MySQLUtil
 {
     bool execute(const std::string& name, const char* format, ...);
-    bool execute(const std::string& name, const std::string& cmd);
 
     mysql::MySQLRes::ptr query(const std::string& name, const char* format, ...);
-    mysql::MySQLRes::ptr query(const std::string& name, const std::string& cmd);
 
     mysql::MySQLStmt::ptr openPrepare(const std::string& name, const std::string& cmd);
 
@@ -693,7 +805,6 @@ namespace MySQLUtil
 
 }
 
-#endif
+#endif /*MYSQL_ENABLE*/
 
 #endif /*__BIFANG_MYSQL_H*/
-

@@ -52,18 +52,21 @@ void test_base()
         if (res) \
         { \
             std::cout << "总行数: " << res->getRows() << std::endl; \
-            std::vector<std::string> field_list; \
-            res->getFieldList(field_list); \
-            for (auto field : field_list) \
+            const std::vector<std::string>& fields = res->getFields(); \
+            for (auto field : fields) \
                 std::cout << field << "\t"; \
             std::cout << std::endl; \
-            \
             while (res->next()) \
             { \
-                std::vector<std::string> res_list; \
-                res->getResList(res_list); \
-                for (auto r : res_list) \
-                    std::cout << r << "\t"; \
+                try \
+                { \
+                    for (auto field : fields) \
+                        std::cout << res->getString(field) << "\t"; \
+                } \
+                catch (std::string& ex) \
+                { \
+                    std::cout << ex << std::endl; \
+                } \
                 std::cout << std::endl; \
             }\
         } \
@@ -133,11 +136,12 @@ void test_base()
     std::cout << std::endl;
 
     std::cout << "更新后查询" << std::endl;
-    XX("sql1", "select * from student");
+    std::string select_sql = "select * from student";
+    XX("sql1", select_sql.c_str());
     std::cout << std::endl;
 
     // 删除表内容
-#if 0
+#if 1
     for (int i = 0; i < 10; i++)
         bifang::MySQLUtil::execute("sql1", "delete from student where code = '%s'", code[i]);
     std::cout << std::endl;
@@ -160,17 +164,14 @@ void test_stmt()
     { \
         bifang::mysql::MySQLStmtRes::ptr stmt_res = stmt->query(); \
         std::cout << "总行数: " << stmt_res->getRows() << std::endl; \
-        std::vector<std::string> field_list; \
-        stmt_res->getFieldList(field_list); \
-        for (auto field : field_list) \
+        const std::vector<std::string>& fields = stmt_res->getFields(); \
+        for (auto field : fields) \
             std::cout << field << "\t"; \
         std::cout << std::endl; \
         while (stmt_res->next()) \
         { \
-            std::vector<std::string> res_list; \
-            stmt_res->getResList(res_list, is_convert); \
-            for (auto r : res_list) \
-                std::cout << r << "\t"; \
+            for (auto field : fields) \
+                std::cout << stmt_res->getString(field, is_convert) << "\t"; \
             std::cout << std::endl; \
         } \
     }
@@ -209,18 +210,21 @@ void test_transaction()
         if (res) \
         { \
             std::cout << "总行数: " << res->getRows() << std::endl; \
-            std::vector<std::string> field_list; \
-            res->getFieldList(field_list); \
-            for (auto field : field_list) \
+            const std::vector<std::string>& fields = res->getFields(); \
+            for (auto field : fields) \
                 std::cout << field << "\t"; \
             std::cout << std::endl; \
-            \
             while (res->next()) \
             { \
-                std::vector<std::string> res_list; \
-                res->getResList(res_list); \
-                for (auto r : res_list) \
-                    std::cout << r << "\t"; \
+                try \
+                { \
+                    for (auto field : fields) \
+                        std::cout << res->getString(field) << "\t"; \
+                } \
+                catch (std::string ex) \
+                { \
+                    std::cout << ex << std::endl; \
+                } \
                 std::cout << std::endl; \
             }\
         } \

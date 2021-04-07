@@ -1,0 +1,27 @@
+{
+    "mysql" :
+    {
+        "sql1" : 
+        {
+            "host" : "127.0.0.1",
+            "port" : 3306,
+            "user" : "root",
+            "passwd" : "123456",
+            "dbname" : "mysql",
+            "poolSize" : 15
+        }
+    },
+
+    "redis" :
+    {
+        "sql1" : 
+        {
+            "host" : "127.0.0.1",
+            "port" : 6379,
+            "passwd" : "123456",
+            "connect_timeout" : 100,
+            "cmd_timeout" : 100,
+            "poolSize" : 15
+        }
+    }
+}

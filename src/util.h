@@ -35,6 +35,25 @@
 namespace bifang
 {
 
+namespace terminal
+{
+    enum Color
+    {
+        BLACK = 30,
+        RED = 31,
+        GREEN = 32,
+        BROWN = 33,
+        BLUE = 34,
+        MAGENTA = 35,
+        CYAN = 36,
+        GREY = 37,
+    };
+
+    void set_color(Color c = BLACK);
+
+    void reset_color();
+}
+
 /**
  * brief: 打印错误信息
  */
