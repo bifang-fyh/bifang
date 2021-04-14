@@ -8,8 +8,7 @@ $(shell test -d logs || mkdir logs)
 $(shell test -d libs || mkdir libs)
 
 CPP = g++
-CFLAGS = -std=c++11 -pipe -O1 -W -fPIC
-#-g
+CFLAGS = -std=c++11 -pipe -O1 -W -fPIC -g
 CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto -lmysqlclient -lhiredis
 DYNAMIC_PATH = libs/libbifang.so
 
@@ -147,7 +146,7 @@ bifang:objs/bifang.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成服务端测试代码
-server:objs/mysql_test.o shared $(SRC_DEPS)
+server:objs/iomanager_test.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成客户端测试代码
@@ -199,4 +198,4 @@ ragel:
 	ragel -G2 src/http/http_client_parse.rl -o src/http/http_client_parse.cpp
 
 clean:
-	rm -rf *.o objs/ logs/ libs/ server client bifang *.pid core*
+	rm -rf *.o objs/ logs/ libs/ server client bifang core*

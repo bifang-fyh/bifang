@@ -1,21 +1,29 @@
-#include "index_html_servlet.h"
-#include "bifang.h"
+#include "doxygen_servlet.h"
 
-namespace index_html
+
+namespace doxygen
 {
 
 RootLogger();
 
-IndexHtmlServlet::IndexHtmlServlet()
-    :bifang::http::Servlet("IndexHtmlServlet")
+DoxygenServlet::DoxygenServlet()
+    :bifang::http::Servlet("DoxygenServlet")
 {
 }
 
 // override
-int32_t IndexHtmlServlet::handle(bifang::http::HttpRequest::ptr request,
-                              bifang::http::HttpResponse::ptr response,
-                              bifang::http::HttpSession::ptr session)
+int32_t DoxygenServlet::handle(bifang::http::HttpRequest::ptr request,
+                               bifang::http::HttpResponse::ptr response,
+                               bifang::http::HttpSession::ptr session)
 {
+#ifdef LIMIT_RATE
+#ifdef LIMIT_RATE_AFTER
+    response->setRate(LIMIT_RATE, LIMIT_RATE_AFTER);
+#else
+    response->setRate(LIMIT_RATE);
+#endif
+#endif
+
     std::string sub_path = bifang::StringUtil::findSubPath(request->getPath(), URI_PATH);
     if (sub_path.size() <= 1) // 重定向页面(302)
     {

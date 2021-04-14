@@ -598,25 +598,25 @@ void HttpResponse::setConetentType(const std::string& filename)
     }
     else
     {
-        //std::string subfix = filename.substr(pos + 1);
-        //std::transform(subfix.begin(), subfix.end(), subfix.begin(), ::tolower);
-        //auto it = ContentTypeList.find(subfix);
-        //if (it == ContentTypeList.end())
-        //{
+        std::string subfix = filename.substr(pos + 1);
+        std::transform(subfix.begin(), subfix.end(), subfix.begin(), ::tolower);
+        auto it = ContentTypeList.find(subfix);
+        if (it == ContentTypeList.end())
+        {
             XX("text/plain; charset=utf-8", true);
-        //}
-        //else
-        //{
-        //    std::string type = it->second;
-        //    if (!strncmp(type.c_str(), "text", 4))
-        //    {
-        //        XX(type + "; charset=utf-8", true);
-        //    }
-        //    else
-        //    {
-        //        XX(type, false);
-        //    }
-        //}
+        }
+        else
+        {
+            std::string type = it->second;
+            if (!strncmp(type.c_str(), "text", 4))
+            {
+                XX(type + "; charset=utf-8", true);
+            }
+            else
+            {
+                XX(type, false);
+            }
+        }
     }
 
 #undef XX

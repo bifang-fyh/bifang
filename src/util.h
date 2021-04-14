@@ -220,10 +220,11 @@ namespace FileUtil
     /**
      * brief: 检查pidfile文件对应的进程是否正在运行
      * param: filename 文件名
+     *        pid_return 已运行服务的pid
      * return: true  - 正在运行
      *         false - 文件错误或者所对应的进程未运行
      */
-    bool CheckPidfile(const std::string& filename);
+    bool CheckPidfile(const std::string& filename, pid_t* pid_return = nullptr);
 
     /**
      * brief: 删除名字为path的文件或目录
@@ -391,11 +392,17 @@ namespace StringUtil
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 
     /**
-     * brief: 将字符串转为hex格式
+     * brief: 将二进制字符串转为hex格式
      * param: str 源字符串
      *        is_upper 是否大写
      */
     std::string toHexString(const std::string& str, bool is_upper = true);
+
+    /**
+     * brief: 将hex格式字符串转为二进制格式
+     * param: str 源字符串
+     */
+    std::string toBinString(const std::string& str);
 }
 
 

@@ -248,8 +248,6 @@ bool Socket::init(int sock)
     getLocalAddress();
     getLocalAddress();
     return true;
-
-    return false;
 }
 
 // virtual
@@ -257,7 +255,6 @@ int Socket::send(const void* buffer, size_t length, int flags)
 {
     if (LIKELY(isConnected()))
         return ::send(m_sock, buffer, length, flags);
-
     return -1;
 }
 

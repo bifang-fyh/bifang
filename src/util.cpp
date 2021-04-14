@@ -671,21 +671,34 @@ bool Mkdir(const std::string& dirname, mode_t mode)
     return true;
 }
 
-bool CheckPidfile(const std::string& filename)
+bool CheckPidfile(const std::string& filename, pid_t* pid_return)
 {
     if (!__lstat(filename.c_str()))
+    {
         return false;
+    }
     std::ifstream ifs(filename);
     std::string line;
     if (!ifs || !std::getline(ifs, line))
+    {
         return false;
+    }
     if (line.empty())
+    {
         return false;
+    }
     pid_t pid = atoi(line.c_str());
     if (pid <= 1)
+    {
         return false;
-    if (kill(pid, 0) != 0)
+    }
+    //std::cout << pid << std::endl;
+    if (kill(pid, 0))
+    {
         return false;
+    }
+    if (pid_return)
+        *pid_return = pid;
     return true;
 }
 
@@ -947,7 +960,6 @@ bool OpenForWrite(std::ofstream& ofs, const std::string& filename,
         Mkdir(dir);
         ofs.open(filename, mode);
     }
-
     return ofs.is_open();
 }
 
@@ -1326,6 +1338,86 @@ std::string toHexString(const std::string& str, bool is_upper)
         ss << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)ch;
 
     return ss.str();
+}
+
+std::string toBinString(const std::string& str)
+{
+    if (str.size() % 2 != 0)
+        return "";
+
+    std::string res;
+    for (size_t i = 0; i < str.size() - 1; i += 2)
+    {
+        unsigned char byte;
+        switch (str[i])
+        {
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+            case 'f':
+                byte = (str[i] - 'a' + 10) << 4;
+                break;
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+                byte = (str[i] - 'A' + 10) << 4;
+                break;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                byte = (str[i] - '0') << 4;
+                break;
+            default:
+                return "";
+        }
+        switch (str[i + 1])
+        {
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+            case 'f':
+                byte |= (str[i + 1] - 'a' + 10);
+                break;
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+                byte |= (str[i + 1] - 'A' + 10);
+                break;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                byte |= (str[i + 1] - '0');
+                break;
+            default:
+                return "";
+        }
+        res.append(1, (char)byte);
+    }
+    return res;
 }
 
 }

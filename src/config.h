@@ -343,6 +343,8 @@ struct LogAppenderDefine
     LogLevel::Level level = LogLevel::UNKNOW;
     std::string formatter;
     std::string file;
+    uint64_t rolling_time = 0; // file, async(rolling interval)
+    std::string rolling_dir; // file, async(rolling directory)
 
     bool operator==(const LogAppenderDefine& oth) const
     {
@@ -351,7 +353,9 @@ struct LogAppenderDefine
             && address == oth.address
             && level == oth.level
             && formatter == oth.formatter
-            && file == oth.file;
+            && file == oth.file
+            && rolling_time == oth.rolling_time
+            && rolling_dir == oth.rolling_dir;
     }
 };
 /**
@@ -423,6 +427,25 @@ struct LexicalCast<std::string, LogDefine>
                         continue;
                     }
                     lad.file = appender["file"].asString();
+                    if (appender.isMember("rolling_time"))
+                    {
+                        uint64_t rolling_time = appender["rolling_time"].asUInt64();
+                        if (rolling_time != 0)
+                        {
+                            if (appender.isMember("rolling_dir"))
+                            {
+                                lad.rolling_time = rolling_time;
+                                lad.rolling_dir = appender["rolling_dir"].asString();
+                                if (lad.rolling_dir[lad.rolling_dir.size() - 1] != '/')
+                                    lad.rolling_dir.append(1, '/');
+                            }
+                            else
+                            {
+                                std::cout << "log config error: rolling dir is null(file): "
+                                    << appender << std::endl;
+                            }
+                        }
+                    }
                 }
                 else if (type == "async")
                 {
@@ -436,6 +459,25 @@ struct LexicalCast<std::string, LogDefine>
                     lad.file = appender["file"].asString();
                     if (appender.isMember("interval"))
                         lad.interval = appender["interval"].asUInt64();
+                    if (appender.isMember("rolling_time"))
+                    {
+                        uint64_t rolling_time = appender["rolling_time"].asUInt64();
+                        if (rolling_time != 0)
+                        {
+                            if (appender.isMember("rolling_dir"))
+                            {
+                                lad.rolling_time = rolling_time;
+                                lad.rolling_dir = appender["rolling_dir"].asString();
+                                if (lad.rolling_dir[lad.rolling_dir.size() - 1] != '/')
+                                    lad.rolling_dir.append(1, '/');
+                            }
+                            else
+                            {
+                                std::cout << "log config error: rolling dir is null(async): "
+                                    << appender << std::endl;
+                            }
+                        }
+                    }
                 }
                 else if (type == "udp")
                 {
@@ -500,11 +542,21 @@ struct LexicalCast<LogDefine, std::string>
                 case 2:
                     n["type"] = "file";
                     n["file"] = a.file;
+                    if (a.rolling_time != 0)
+                    {
+                        n["rolling_time"] = a.rolling_time;
+                        n["rolling_dir"] = a.rolling_dir;
+                    }
                     break;
                 case 3:
                     n["type"] = "async";
                     n["file"] = a.file;
                     n["interval"] = a.interval;
+                    if (a.rolling_time != 0)
+                    {
+                        n["rolling_time"] = a.rolling_time;
+                        n["rolling_dir"] = a.rolling_dir;
+                    }
                     break;
                 case 4:
                     n["type"] = "udp";

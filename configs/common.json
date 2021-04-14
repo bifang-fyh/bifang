@@ -1,7 +1,7 @@
 {
     "system" :
     {
-        "pid_file" : "logs/bifang.pid",
+        "pid_file" : "bifang.pid",
         "fiber_stack_size" : 1500000,
         "tcp" :
         {

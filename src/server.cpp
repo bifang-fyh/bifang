@@ -15,6 +15,11 @@ static Config<std::vector<TcpServerConf> >::ptr g_servers_config =
 static Config<std::unordered_map<std::string, uint32_t> >::ptr g_worker_config =
        ConfigMgr::GetInstance()->get("workers", std::unordered_map<std::string, uint32_t>(), "worker config");
 
+static void reopen_handler(int signo)
+{
+    LoggerMgr::GetInstance()->reopen();
+}
+
 bool ServerManager::init(int argc, char** argv)
 {
     if (m_running)
@@ -22,7 +27,8 @@ bool ServerManager::init(int argc, char** argv)
     m_argc = argc;
     m_argv = argv;
 
-    EnvMgr::GetInstance()->addHelp("s", "start with the terminal(default)");
+    EnvMgr::GetInstance()->addHelp("r", "reopen log file");
+    EnvMgr::GetInstance()->addHelp("s", "stop server");
     EnvMgr::GetInstance()->addHelp("d", "run as daemon");
     EnvMgr::GetInstance()->addHelp("c", "config path default: ./configs");
     EnvMgr::GetInstance()->addHelp("p", "print help");
@@ -36,24 +42,40 @@ bool ServerManager::init(int argc, char** argv)
 
     std::string conf_path = EnvMgr::GetInstance()->getConfigPath();
     ConfigMgr::GetInstance()->load(conf_path);
+
     std::string pidfile = EnvMgr::GetInstance()->getAbsolutePath(g_pid_file->getValue());
-    if (FileUtil::CheckPidfile(pidfile))
+    pid_t pid;
+    bool is_running = FileUtil::CheckPidfile(pidfile, &pid);
+    if (EnvMgr::GetInstance()->has("s"))
     {
-        log_error << "server is running: " << pidfile;
+        if (is_running)
+            if (!kill(pid, SIGKILL))
+                std::cout << "server stop sucessful, pid:" << pid << std::endl;
+            else
+                std::cout << "server stop fail, pid:" << pid << std::endl;
+        else
+            std::cout << "server not running, can't stop" << std::endl;
         return false;
     }
+    else if (EnvMgr::GetInstance()->has("r"))
     {
-        std::ofstream ofs(pidfile);
-        if (!ofs)
-        {
-            log_error << "open pidfile [" << pidfile << "] failed";
-            return false;
-        }
-        ofs << getpid();
+        if (is_running)
+            if (!kill(pid, SIGUSR1))
+                std::cout << "reopen log file sucessful" << std::endl;
+            else
+                std::cout << "reopen log file fail" << std::endl;
+        else
+            std::cout << "server not running, can't reopen log file" << std::endl;
+        return false;
+    }
+
+    if (is_running)
+    {
+        std::cout << "server is running, pid:" << pid << std::endl;
+        return false;
     }
 
     ModuleMgr::GetInstance()->init();
-
     return true;
 }
 
@@ -194,12 +216,33 @@ std::map<std::string, std::vector<TcpServer::ptr> >& ServerManager::GetListOfSer
 // private
 int ServerManager::main(int argc, char** argv)
 {
+    {
+        std::string pidfile = EnvMgr::GetInstance()->getAbsolutePath(g_pid_file->getValue());
+        std::ofstream ofs(pidfile);
+        if (!ofs)
+        {
+            std::cout << "open pidfile [" << pidfile << "] failed" << std::endl;
+            return false;
+        }
+        ofs << getpid();
+    }
+
     signal(SIGPIPE, SIG_IGN);
-    log_info << "main start";
+    struct sigaction sa;
+    memset(&sa, 0x00, sizeof(struct sigaction));
+    sa.sa_handler = reopen_handler;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGUSR1, &sa, NULL))
+    {
+        std::cout << "sigaction(SIGUSR1) failed" << std::endl;
+        return -1;
+    }
 
     m_mainIOManager.reset(new IOManager(1, true, "main"));
+    LoggerMgr::GetInstance()->reopen();
+    log_info << "main start";
     m_mainIOManager->schedule(std::bind(&ServerManager::main_fiber, this));
-    m_mainIOManager->addTimer(60000,
+    m_mainIOManager->addTimer(60 * 000,
         []()
         {
             log_debug << "How old are you? I'm fine, thank you, and you?";

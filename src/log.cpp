@@ -4,6 +4,8 @@
 #include "log.h"
 #include "config.h"
 #include "hook.h"
+#include "iomanager.h"
+#include "Assert.h"
 
 namespace bifang
 {
@@ -298,7 +300,6 @@ void Logger::log(LogLevel::Level level, LogEvent::ptr event)
     if (level >= m_level)
     {
         MutexType::Lock lock(m_mutex);
-
         if (!m_appenders.empty())
         {
             for (auto& i : m_appenders)
@@ -318,7 +319,6 @@ void Logger::add(LogAppender::ptr appender)
 bool Logger::del(LogAppender::ptr appender)
 {
     MutexType::Lock lock(m_mutex);
-
     for (auto it = m_appenders.begin(); it != m_appenders.end(); it++)
     {
         if (*it == appender)
@@ -327,7 +327,6 @@ bool Logger::del(LogAppender::ptr appender)
             return true;
         }
     }
-
     return false;
 }
 
@@ -350,6 +349,12 @@ std::string Logger::toJsonString()
     RESEQUENCE(root);
 }
 
+void Logger::reopen()
+{
+    MutexType::Lock lock(m_mutex);
+    for (auto it = m_appenders.begin(); it != m_appenders.end(); it++)
+        (*it)->reopen();
+}
 
 // 控制台输出类
 void StdoutLogAppender::log(LogLevel::Level level, LogEvent::ptr event)
@@ -374,9 +379,35 @@ std::string StdoutLogAppender::toJsonString()
 
 
 // 文件输出类
-FileLogAppender::FileLogAppender(const std::string& filename)
+FileLogAppender::FileLogAppender(const std::string& filename,
+                     uint64_t rolling_time, const std::string& rolling_dir)
     :m_filename(filename)
+    ,m_rolling_time(rolling_time)
+    ,m_rolling_dir(rolling_dir)
 {
+    FileUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
+}
+
+void FileLogAppender::rolling()
+{
+    MutexType::Lock lock(m_mutex);
+    m_filestream.close();
+    std::string new_name;
+    std::string filename = m_filename;
+    size_t pos = filename.rfind("/");
+    if (pos != std::string::npos)
+        filename = filename.substr(pos + 1, filename.size() - pos - 1);
+    pos = filename.rfind(".");
+    if (pos != std::string::npos)
+    {
+        std::string str1 = filename.substr(0, pos);
+        std::string str2 = filename.substr(pos, filename.size() - pos);
+        new_name = m_rolling_dir + str1 + "~" + time_to_string() + str2;
+    }
+    else
+        new_name = m_rolling_dir + filename + "~" + time_to_string();
+    //std::cout << m_filename << "->" << new_name << std::endl;
+    FileUtil::Mv(m_filename, new_name);
     FileUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
 }
 
@@ -402,11 +433,36 @@ std::string FileLogAppender::toJsonString()
     RESEQUENCE(root);
 }
 
+void FileLogAppender::reopen()
+{
+    MutexType::Lock lock(m_mutex);
+    if (UNLIKELY(m_flag))
+    {
+        IOManager* iom = IOManager::getThis();
+        if (iom != nullptr)
+        {
+            m_flag = false;
+            if (m_rolling_time != 0 && !m_rolling_dir.empty())
+            {
+                FileUtil::Mkdir(m_rolling_dir);
+                iom->addTimer(m_rolling_time * 1000, std::bind(&FileLogAppender::rolling, this), true);
+            }
+        }
+    }
+
+    if (m_filestream)
+        m_filestream.close();
+    FileUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
+}
+
 
 // 异步输出类
-AsyncLogAppender::AsyncLogAppender(const std::string& filename, uint64_t interval)
+AsyncLogAppender::AsyncLogAppender(const std::string& filename, uint64_t interval,
+                      uint64_t rolling_time, const std::string& rolling_dir)
     :m_filename(filename)
     ,m_interval(interval)
+    ,m_rolling_time(rolling_time)
+    ,m_rolling_dir(rolling_dir)
     ,m_thread(new Thread(std::bind(&AsyncLogAppender::run, this), "async_log"))
 {
     FileUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
@@ -417,6 +473,29 @@ AsyncLogAppender::~AsyncLogAppender()
     m_running = false;
     m_thread->join();
     m_filestream.flush();
+}
+
+void AsyncLogAppender::rolling()
+{
+    MutexType::Lock lock(m_mutex);
+    m_filestream.close();
+    std::string new_name;
+    std::string filename = m_filename;
+    size_t pos = filename.rfind("/");
+    if (pos != std::string::npos)
+        filename = filename.substr(pos + 1, filename.size() - pos - 1);
+    pos = filename.rfind(".");
+    if (pos != std::string::npos)
+    {
+        std::string str1 = filename.substr(0, pos);
+        std::string str2 = filename.substr(pos, filename.size() - pos);
+        new_name = m_rolling_dir + str1 + "~" + time_to_string() + str2;
+    }
+    else
+        new_name = m_rolling_dir + filename + "~" + time_to_string();
+    //std::cout << m_filename << "->" << new_name << std::endl;
+    FileUtil::Mv(m_filename, new_name);
+    FileUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
 }
 
 void AsyncLogAppender::log(LogLevel::Level level, LogEvent::ptr event)
@@ -456,6 +535,28 @@ std::string AsyncLogAppender::toJsonString()
     root["formatter"] = m_formatter->getPattern();
 
     RESEQUENCE(root);
+}
+
+void AsyncLogAppender::reopen()
+{
+    MutexType::Lock lock(m_mutex);
+    if (UNLIKELY(m_flag))
+    {
+        IOManager* iom = IOManager::getThis();
+        if (iom != nullptr)
+        {
+            m_flag = false;
+            if (m_rolling_time != 0 && !m_rolling_dir.empty())
+            {
+                FileUtil::Mkdir(m_rolling_dir);
+                iom->addTimer(m_rolling_time * 1000, std::bind(&AsyncLogAppender::rolling, this), true);
+            }
+        }
+    }
+
+    if (m_filestream)
+        m_filestream.close();
+    FileUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
 }
 
 // private
@@ -604,9 +705,9 @@ LoggerManager::LoggerManager()
                         if (appender.type == 1)
                             ap.reset(new StdoutLogAppender);
                         else if (appender.type == 2)
-                            ap.reset(new FileLogAppender(appender.file));
+                            ap.reset(new FileLogAppender(appender.file, appender.rolling_time, appender.rolling_dir));
                         else if (appender.type == 3)
-                            ap.reset(new AsyncLogAppender(appender.file, appender.interval));
+                            ap.reset(new AsyncLogAppender(appender.file, appender.interval, appender.rolling_time, appender.rolling_dir));
                         else if (appender.type == 4)
                             ap.reset(new UDPLogAppender(appender.address, appender.interval));
 
@@ -673,6 +774,16 @@ std::string LoggerManager::toJsonString()
         root.append(Json::Value(i.second->toJsonString()));
 
     RESEQUENCE(root);
+}
+
+void LoggerManager::reopen()
+{
+    MutexType::Lock lock(m_mutex);
+    for (auto it = m_loggers.begin(); it != m_loggers.end(); it++)
+    {
+        Logger::ptr logger = it->second;
+        logger->reopen();
+    }
 }
 
 

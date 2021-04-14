@@ -2,6 +2,7 @@
 #include "log.h"
 #include "util.h"
 #include "config.h"
+#include "environment.h"
 
 
 namespace bifang
@@ -79,6 +80,9 @@ int ProcessManager::daemonStart(int argc, char** argv,
                 if (status == 9)
                 {
                     log_info << "killed";
+                    Config<std::string>::ptr g_pid_file = ConfigMgr::GetInstance()->get<std::string>("system.pid_file");
+                    std::string pidfile = EnvMgr::GetInstance()->getAbsolutePath(g_pid_file->getValue());
+                    FileUtil::Rm(pidfile);
                     break;
                 }
                 else
@@ -87,6 +91,9 @@ int ProcessManager::daemonStart(int argc, char** argv,
             else
             {
                 log_info << "child finished pid=" << pid;
+                Config<std::string>::ptr g_pid_file = ConfigMgr::GetInstance()->get<std::string>("system.pid_file");
+                std::string pidfile = EnvMgr::GetInstance()->getAbsolutePath(g_pid_file->getValue());
+                FileUtil::Rm(pidfile);
                 break;
             }
             m_restartCount += 1;

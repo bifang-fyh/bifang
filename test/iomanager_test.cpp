@@ -2,7 +2,7 @@
  * brief: iomanager简单测试
  */
 #include "bifang.h"
-
+ 
 RootLogger();
 
 int sock = 0;
@@ -62,10 +62,34 @@ void timer_test()
             }, true);
 }
 
+void print(const std::string& str)
+{
+    while (1)
+    {
+        log_info << "print:" << str;
+        sleep(1);
+    }
+}
+ 
+void other_test()
+{
+    std::ofstream ofs("haha.txt");
+    int count = 0;
+
+    while (1)
+    {
+        count++;
+        ofs << count << std::endl;
+        usleep(500 * 1000);
+        ofs.flush();
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    test();
-    timer_test();
-    
+    //test();
+    //timer_test();
+    other_test();
+
     return 0;
 }

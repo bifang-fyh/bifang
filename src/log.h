@@ -376,6 +376,11 @@ public:
     virtual std::string toJsonString() = 0;
 
     /**
+     * brief: 重新打开文件(file, async专用)
+     */
+    virtual void reopen() {}
+
+    /**
      * brief: 设置日志格式器
      */
     void setFormatter(LogFormatter::ptr val)
@@ -446,6 +451,8 @@ public:
      */
     std::string toJsonString();
 
+    void reopen();
+
 private:
     // Mutex
     MutexType m_mutex;
@@ -472,12 +479,12 @@ public:
      * param: level 日志级别
      *        event 日志事件
      */
-    void log(LogLevel::Level level, LogEvent::ptr event) override;
+    virtual void log(LogLevel::Level level, LogEvent::ptr event) override;
 
     /**
      * brief: 将控制台输出类配置转成JSON String
      */
-    std::string toJsonString() override;
+    virtual std::string toJsonString() override;
 };
 
 /**
@@ -488,25 +495,35 @@ class FileLogAppender : public LogAppender
 public:
     typedef std::shared_ptr<FileLogAppender> ptr;
 
-    FileLogAppender(const std::string& filename);
+    FileLogAppender(const std::string& filename, uint64_t rolling_time,
+        const std::string& rolling_dir);
+
+    void rolling();
 
     /**
      * brief: 写日志
      * param: level 日志级别
      *        event 日志事件
      */
-    void log(LogLevel::Level level, LogEvent::ptr event) override;
+    virtual void log(LogLevel::Level level, LogEvent::ptr event) override;
 
     /**
      * brief: 将文件输出类配置转成JSON String
      */
-    std::string toJsonString() override;
+    virtual std::string toJsonString() override;
+
+    virtual void reopen() override;
 
 private:
     // 日志输出文件名
     std::string m_filename;
     // 输出文件流
     std::ofstream m_filestream;
+    // 日志循环周期
+    uint64_t m_rolling_time;
+    // 旧日志日志保存根目录
+    std::string m_rolling_dir;
+    bool m_flag = true;
 };
 
 /**
@@ -562,21 +579,26 @@ class AsyncLogAppender : public LogAppender
 public:
     typedef std::shared_ptr<AsyncLogAppender> ptr;
 
-    AsyncLogAppender(const std::string& filename, uint64_t interval = 2000);
+    AsyncLogAppender(const std::string& filename, uint64_t interval,
+        uint64_t rolling_time, const std::string& rolling_dir);
 
     ~AsyncLogAppender();
+
+    void rolling();
 
     /**
      * brief: 写日志
      * param: level 日志级别
      *        event 日志事件
      */
-    void log(LogLevel::Level level, LogEvent::ptr event) override;
+    virtual void log(LogLevel::Level level, LogEvent::ptr event) override;
 
     /**
      * brief: 将文件输出类配置转成JSON String
      */
-    std::string toJsonString() override;
+    virtual std::string toJsonString() override;
+
+    virtual void reopen() override;
 
 private:
     /**
@@ -597,6 +619,11 @@ private:
     std::ofstream m_filestream;
     // 当前异步线程是否运行
     bool m_running = true;
+    // 日志循环周期
+    uint64_t m_rolling_time;
+    // 旧日志日志保存根目录
+    std::string m_rolling_dir;
+    bool m_flag = true;
 };
 
 /**
@@ -622,12 +649,12 @@ public:
      * param: level 日志级别
      *        event 日志事件
      */
-    void log(LogLevel::Level level, LogEvent::ptr event) override;
+    virtual void log(LogLevel::Level level, LogEvent::ptr event) override;
 
     /**
      * brief: 将文件输出类配置转成JSON String
      */
-    std::string toJsonString() override;
+    virtual std::string toJsonString() override;
 
 private:
     /**
@@ -702,6 +729,8 @@ public:
      * brief: 将所有的日志器配置转成JSON String
      */
     std::string toJsonString();
+
+    void reopen();
 
 private:
     // mutex
