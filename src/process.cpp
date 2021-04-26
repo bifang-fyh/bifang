@@ -11,7 +11,7 @@ namespace bifang
 SystemLogger();
 
 static Config<uint32_t>::ptr g_daemon_restart_interval =
-           ConfigMgr::GetInstance()->get("system.daemon.restart_interval", (uint32_t)3, "daemon restart interval");
+           ConfigMgr::GetInstance()->get("system.daemon.restart_interval", (uint32_t)5, "daemon restart interval");
 
 std::string ProcessManager::toString() const
 {
@@ -77,16 +77,17 @@ int ProcessManager::daemonStart(int argc, char** argv,
             waitpid(pid, &status, 0);
             if (status)
             {
-                if (status == 9)
+                if (status == SIGUSR2)
                 {
-                    log_info << "killed";
+                    kill(pid, SIGKILL);
+                    log_info << "child be killed";
                     Config<std::string>::ptr g_pid_file = ConfigMgr::GetInstance()->get<std::string>("system.pid_file");
                     std::string pidfile = EnvMgr::GetInstance()->getAbsolutePath(g_pid_file->getValue());
                     FileUtil::Rm(pidfile);
                     break;
                 }
                 else
-                    log_error << "child crash pid=" << pid << ", status=" << status;
+                    log_error << "child crash pid=" << pid << ", status=" << status << ", will restart";
             }
             else
             {
@@ -96,8 +97,8 @@ int ProcessManager::daemonStart(int argc, char** argv,
                 FileUtil::Rm(pidfile);
                 break;
             }
-            m_restartCount += 1;
             sleep(g_daemon_restart_interval->getValue());
+            log_info << "child restart time=" << ++m_restartCount;
         }
     }
 

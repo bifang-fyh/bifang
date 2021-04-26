@@ -12,31 +12,31 @@ namespace bifang
 class ServerManager
 {
 public:
+    ServerManager(const std::string& config_path);
+
+    virtual ~ServerManager() {}
+
     bool init(int argc, char** argv);
     bool run();
 
-public:
     void startServer(std::vector<TcpServer::ptr>& servers);
-
-    bool getServer(const std::string& type, std::vector<TcpServer::ptr>& servers);
-
-    std::map<std::string, std::vector<TcpServer::ptr> >& GetListOfServer();
-
-    IOManager::ptr getMainIOManager() const { return m_mainIOManager; }
 
 private:
     int main(int argc, char** argv);
-    int main_fiber();
 
-private:
+public:
+    virtual int main_fiber() = 0;
+
+protected:
     int m_argc = 0;
     char** m_argv = nullptr;
     bool m_running = false;
-    std::map<std::string, std::vector<TcpServer::ptr> > m_servers;
+    std::string m_config_path;
     IOManager::ptr m_mainIOManager;
 };
 
-typedef Singleton<ServerManager> ServerMgr;
+bool getServer(const std::string& type, std::vector<TcpServer::ptr>& servers);
+const std::map<std::string, std::vector<TcpServer::ptr> >& getListOfServer();
 
 }
 

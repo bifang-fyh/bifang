@@ -47,7 +47,40 @@ Redis::Redis(const std::string& host, int port, const std::string& passwd,
 
 bool Redis::reconnect()
 {
-    return m_context ? !redisReconnect(m_context.get()) : false;
+    if (!m_context)
+        return false;
+    if (redisReconnect(m_context.get()))
+        return false;
+
+    redisSetTimeout(m_context.get(), m_cmdTimeout);
+    if (!m_passwd.empty())
+    {
+        redisReply* r = (redisReply*)redisCommand(m_context.get(), "auth %s", m_passwd.c_str());
+        if (!r)
+        {
+            log_error << "auth error(" << m_host << ":" << m_port << ")";
+            return false;
+        }
+
+        if (r->type != REDIS_REPLY_STATUS)
+        {
+            log_error << "auth reply type error:" << r->type << "(" << m_host << ":" << m_port << ")";
+            return false;
+        }
+
+        if (!r->str)
+        {
+            log_error << "auth reply str error:NULL(" << m_host << ":" << m_port << ")";
+            return false;
+        }
+
+        if (strncasecmp(r->str, "OK", 2))
+        {
+            log_error << "auth error:" << r->str << "(" << m_host << ":" << m_port << ")";
+            return false;
+        }
+    }
+    return true;
 }
 
 bool Redis::connect()
@@ -324,7 +357,7 @@ std::unordered_map<std::string, std::string> Redis::hgetAll(const std::string& k
     return std::move(m);
 }
 
-int64_t Redis::hdel(const std::string& key, std::initializer_list<std::string> fields)
+int64_t Redis::hdel(const std::string& key, std::unordered_set<std::string> fields)
 {
     std::string cmd_str = "HDEL " + key;
     for (auto it = fields.begin(); it != fields.end(); it++)
@@ -456,7 +489,16 @@ bool Redis::lset(const std::string& key, int64_t index, const std::string& value
     return !!cmd("LREM %s %ld %s", key.c_str(), index, value.c_str());
 }
 
-int64_t Redis::sadd(const std::string& key, std::initializer_list<std::string> members)
+int64_t Redis::sadd(const std::string& key, const std::string& member)
+{
+    std::string cmd_str = "SADD " + key + " " + member;
+    ReplyPtr reply = cmd(cmd_str.c_str());
+    if (!reply || reply->type != REDIS_REPLY_INTEGER)
+        return -1;
+    return reply->integer;
+}
+
+int64_t Redis::sadd(const std::string& key, std::unordered_set<std::string> members)
 {
     std::string cmd_str = "SADD " + key;
     for (auto it = members.begin(); it != members.end(); it++)
@@ -467,7 +509,7 @@ int64_t Redis::sadd(const std::string& key, std::initializer_list<std::string> m
     return reply->integer;
 }
 
-int64_t Redis::srem(const std::string& key, std::initializer_list<std::string> members)
+int64_t Redis::srem(const std::string& key, std::unordered_set<std::string> members)
 {
     std::string cmd_str = "SREM " + key;
     for (auto it = members.begin(); it != members.end(); it++)
@@ -516,7 +558,7 @@ std::unordered_set<std::string> Redis::spop(const std::string& key, int64_t coun
     return std::move(s);
 }
 
-std::unordered_set<std::string> Redis::sinter(std::initializer_list<std::string> keys)
+std::unordered_set<std::string> Redis::sinter(std::unordered_set<std::string> keys)
 {
     std::unordered_set<std::string> s;
     std::string cmd_str = "SINTER";
@@ -530,7 +572,7 @@ std::unordered_set<std::string> Redis::sinter(std::initializer_list<std::string>
     return std::move(s);
 }
 
-std::unordered_set<std::string> Redis::sunion(std::initializer_list<std::string> keys)
+std::unordered_set<std::string> Redis::sunion(std::unordered_set<std::string> keys)
 {
     std::unordered_set<std::string> s;
     std::string cmd_str = "SUNION";
@@ -544,7 +586,7 @@ std::unordered_set<std::string> Redis::sunion(std::initializer_list<std::string>
     return std::move(s);
 }
 
-std::unordered_set<std::string> Redis::sdiff(std::initializer_list<std::string> keys)
+std::unordered_set<std::string> Redis::sdiff(std::unordered_set<std::string> keys)
 {
     std::unordered_set<std::string> s;
     std::string cmd_str = "SDIFF";
@@ -558,7 +600,7 @@ std::unordered_set<std::string> Redis::sdiff(std::initializer_list<std::string> 
     return std::move(s);
 }
 
-int64_t Redis::zadd(const std::string& key, std::initializer_list<std::pair<double, std::string>> score_members)
+int64_t Redis::zadd(const std::string& key, std::unordered_map<double, std::string> score_members)
 {
     std::string cmd_str = "ZADD " + key;
     for (auto it = score_members.begin(); it != score_members.end(); it++)
@@ -569,7 +611,7 @@ int64_t Redis::zadd(const std::string& key, std::initializer_list<std::pair<doub
     return reply->integer;
 }
 
-int64_t Redis::zrem(const std::string& key, std::initializer_list<std::string> members)
+int64_t Redis::zrem(const std::string& key, std::unordered_set<std::string> members)
 {
     std::string cmd_str = "ZREM " + key;
     for (auto it = members.begin(); it != members.end(); it++)

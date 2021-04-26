@@ -2,7 +2,7 @@
     "system" :
     {
         "pid_file" : "bifang.pid",
-        "fiber_stack_size" : 1500000,
+        "fiber_stack_size" : 1000000,
         "tcp" :
         {
             "server_read_timeout" : 100000,

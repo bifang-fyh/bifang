@@ -70,19 +70,32 @@ void print(const std::string& str)
         sleep(1);
     }
 }
- 
+
 void other_test()
 {
-    std::ofstream ofs("haha.txt");
-    int count = 0;
+#if 0
+    std::string str;
+    str.resize(4);
+    uint32_t i = 15498656;
+    i = bifang::littleByteSwap(i);
+    memcpy(&str[0], &i, 4);
+    std::cout << std::hex;
+    for (auto ch : str)
+        std::cout << (uint32_t)(uint8_t)ch << std::endl;
+#endif
 
-    while (1)
+    std::string str = "'123''haha'fdsgg'";
+    std::cout << str << std::endl;
+    size_t i = 0;
+    while (i < str.size())
     {
-        count++;
-        ofs << count << std::endl;
-        usleep(500 * 1000);
-        ofs.flush();
+        size_t pos = str.find("'", i);
+        if (pos == std::string::npos)
+            break;
+        str.insert(pos, 1, '\'');
+        i = pos + 2;
     }
+    std::cout << str << std::endl;
 }
 
 int main(int argc, char* argv[])

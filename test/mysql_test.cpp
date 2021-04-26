@@ -176,17 +176,17 @@ void test_stmt()
         } \
     }
 
-    bifang::mysql::MySQLStmt::ptr stmt = bifang::MySQLUtil::openPrepare("sql1", "select * from student where sex = ?");
-
-    std::cout << "查询男生信息" << std::endl;
-    stmt->multibind("Y");
-    XX(true);
-    std::cout << std::endl;
-
-    std::cout << "查询女生信息" << std::endl;
-    stmt->multibind("N");
-    XX(false);
-    std::cout << std::endl;
+    //bifang::mysql::MySQLStmt::ptr stmt = bifang::MySQLUtil::openPrepare("sql1", "select * from student where sex = ?");
+    //
+    //std::cout << "查询男生信息" << std::endl;
+    //stmt->multibind("Y");
+    //XX(true);
+    //std::cout << std::endl;
+    //
+    //std::cout << "查询女生信息" << std::endl;
+    //stmt->multibind("N");
+    //XX(false);
+    //std::cout << std::endl;
 
 #undef XX
 }

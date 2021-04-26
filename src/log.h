@@ -474,6 +474,8 @@ class StdoutLogAppender : public LogAppender
 public:
     typedef std::shared_ptr<StdoutLogAppender> ptr;
 
+    StdoutLogAppender(bool enable_color = true);
+
     /**
      * brief: 写日志
      * param: level 日志级别
@@ -485,6 +487,9 @@ public:
      * brief: 将控制台输出类配置转成JSON String
      */
     virtual std::string toJsonString() override;
+
+private:
+    bool m_enable_color;
 };
 
 /**

@@ -673,7 +673,7 @@ bool Mkdir(const std::string& dirname, mode_t mode)
 
 bool CheckPidfile(const std::string& filename, pid_t* pid_return)
 {
-    if (!__lstat(filename.c_str()))
+    if (!__lstat(filename))
     {
         return false;
     }

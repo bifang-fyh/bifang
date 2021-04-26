@@ -30,7 +30,7 @@ bool IndexHtmlModule::onServerReady()
     log_info << "IndexHtmlModule onServerReady";
 
     std::vector<bifang::TcpServer::ptr> servers;
-    if (!bifang::ServerMgr::GetInstance()->getServer("http", servers))
+    if (!bifang::getServer("http", servers))
     {
         log_error << "no http server alive";
         return false;

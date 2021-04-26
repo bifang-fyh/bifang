@@ -225,7 +225,7 @@ int32_t StatusServlet::handle(HttpRequest::ptr request,
     TAIL();
 
     HEAD("Servers");
-    std::map<std::string, std::vector<TcpServer::ptr> >& servers = ServerMgr::GetInstance()->GetListOfServer();
+    const std::map<std::string, std::vector<TcpServer::ptr> >& servers = getListOfServer();
     for (auto& it : servers)
     {
         ss << "<li>" << it.first << ":<br/>";

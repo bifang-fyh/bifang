@@ -31,7 +31,7 @@ bool ChatRoomModule::onServerReady()
     log_info << "ChatRoomModule onServerReady";
 
     std::vector<bifang::TcpServer::ptr> servers;
-    if (!bifang::ServerMgr::GetInstance()->getServer("http", servers))
+    if (!bifang::getServer("http", servers))
     {
         log_error << "no http server alive";
         return false;
@@ -47,7 +47,7 @@ bool ChatRoomModule::onServerReady()
     }
 
     servers.clear();
-    if (!bifang::ServerMgr::GetInstance()->getServer("ws", servers))
+    if (!bifang::getServer("ws", servers))
     {
         log_error << "no websocket server alive";
         return false;

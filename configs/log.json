@@ -8,7 +8,7 @@
             [
                 {
                     "type" : "file",
-                    "file" : "logs/root_async.log",
+                    "file" : "logs/root.log",
                     "rolling_time": 18000,
                     "rolling_dir": "logs/root/",
                     "level" : "info",
@@ -24,7 +24,7 @@
             [
                 {
                     "type" : "file",
-                    "file" : "logs/system_async.log",
+                    "file" : "logs/system.log",
                     "rolling_time": 18000,
                     "rolling_dir": "logs/system/",
                     "level" : "info",

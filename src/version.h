@@ -5,6 +5,9 @@
 
 #define USE_EPOLL
 
+// 0小端 1大端
+#define BIFANG_ENDIAN    0
+
 #define MYSQL_ENABLE
 
 #define REDIS_ENABLE

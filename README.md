@@ -106,6 +106,10 @@
 
 作者: bifang
 
+QQ: 1125498083
+
+邮箱: 1125498083@qq.com
+
 博客地址：https://blog.csdn.net/weixin_43798887
 
 github: https://github.com/bifang-fyh/bifang

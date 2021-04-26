@@ -356,13 +356,59 @@ void Logger::reopen()
         (*it)->reopen();
 }
 
+
 // 控制台输出类
+class StdoutColor
+{
+public:
+    StdoutColor(LogLevel::Level level)
+    {
+        switch (level)
+        {
+            case LogLevel::UNKNOW:
+                //terminal::set_color(terminal::GREY);
+                break;
+            case LogLevel::DEBUG:
+                terminal::set_color(terminal::GREY);
+                break;
+            case LogLevel::INFO:
+                terminal::set_color(terminal::GREEN);
+                break;
+            case LogLevel::WARN:
+                terminal::set_color(terminal::BLUE);
+                break;
+            case LogLevel::ERROR:
+                terminal::set_color(terminal::RED);
+                break;
+            case LogLevel::FATAL:
+                terminal::set_color(terminal::BROWN);
+                break;
+        }
+    }
+
+    ~StdoutColor()
+    {
+        terminal::reset_color();
+    }
+};
+
+StdoutLogAppender::StdoutLogAppender(bool enable_color)
+    :m_enable_color(enable_color)
+{
+}
+
 void StdoutLogAppender::log(LogLevel::Level level, LogEvent::ptr event)
 {
     if (level >= m_level)
     {
         MutexType::Lock lock(m_mutex);
-        m_formatter->format(std::cout, level, event);
+        if (m_enable_color)
+        {
+            StdoutColor c(level);
+            m_formatter->format(std::cout, level, event);
+        }
+        else
+            m_formatter->format(std::cout, level, event);
     }
 }
 

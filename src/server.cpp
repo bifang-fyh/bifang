@@ -9,15 +9,35 @@ SystemLogger();
 static Config<std::string>::ptr g_pid_file =
     ConfigMgr::GetInstance()->get("system.pid_file", std::string("bifang.pid"), "system pid file config");
 
-static Config<std::vector<TcpServerConf> >::ptr g_servers_config =
-    ConfigMgr::GetInstance()->get("servers", std::vector<TcpServerConf>(), "servers config");
-
 static Config<std::unordered_map<std::string, uint32_t> >::ptr g_worker_config =
        ConfigMgr::GetInstance()->get("workers", std::unordered_map<std::string, uint32_t>(), "worker config");
 
+static Config<std::vector<TcpServerConf> >::ptr g_servers_config =
+    ConfigMgr::GetInstance()->get("servers", std::vector<TcpServerConf>(), "servers config");
+
+static std::map<std::string, std::vector<TcpServer::ptr> > g_servers;
+bool getServer(const std::string& type, std::vector<TcpServer::ptr>& servers)
+{
+    auto it = g_servers.find(type);
+    if (it == g_servers.end())
+        return false;
+    servers = it->second;
+    return true;
+}
+const std::map<std::string, std::vector<TcpServer::ptr> >& getListOfServer()
+{
+    return g_servers;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 static void reopen_handler(int signo)
 {
     LoggerMgr::GetInstance()->reopen();
+}
+
+ServerManager::ServerManager(const std::string& config_path)
+    :m_config_path(config_path)
+{
 }
 
 bool ServerManager::init(int argc, char** argv)
@@ -41,7 +61,10 @@ bool ServerManager::init(int argc, char** argv)
     }
 
     std::string conf_path = EnvMgr::GetInstance()->getConfigPath();
-    ConfigMgr::GetInstance()->load(conf_path);
+    if (!conf_path.empty())
+        ConfigMgr::GetInstance()->load(conf_path);
+    else
+        ConfigMgr::GetInstance()->load(m_config_path);
 
     std::string pidfile = EnvMgr::GetInstance()->getAbsolutePath(g_pid_file->getValue());
     pid_t pid;
@@ -49,10 +72,12 @@ bool ServerManager::init(int argc, char** argv)
     if (EnvMgr::GetInstance()->has("s"))
     {
         if (is_running)
-            if (!kill(pid, SIGKILL))
+        {
+            if (!kill(pid, SIGUSR2))
                 std::cout << "server stop sucessful, pid:" << pid << std::endl;
             else
                 std::cout << "server stop fail, pid:" << pid << std::endl;
+        }
         else
             std::cout << "server not running, can't stop" << std::endl;
         return false;
@@ -68,7 +93,6 @@ bool ServerManager::init(int argc, char** argv)
             std::cout << "server not running, can't reopen log file" << std::endl;
         return false;
     }
-
     if (is_running)
     {
         std::cout << "server is running, pid:" << pid << std::endl;
@@ -93,7 +117,6 @@ bool ServerManager::run()
 void ServerManager::startServer(std::vector<TcpServer::ptr>& servers)
 {
     auto servers_confs = g_servers_config->getValue();
-    WorkerMgr::GetInstance()->init(g_worker_config->getValue());
 
     for (auto& i : servers_confs)
     {
@@ -193,24 +216,9 @@ void ServerManager::startServer(std::vector<TcpServer::ptr>& servers)
                     << i.cert_file << " key_file=" << i.key_file;
             }
         }
-        m_servers[i.type].push_back(server);
+        g_servers[i.type].push_back(server);
         servers.push_back(server);
     }
-}
-
-bool ServerManager::getServer(const std::string& type,
-                      std::vector<TcpServer::ptr>& servers)
-{
-    auto it = m_servers.find(type);
-    if (it == m_servers.end())
-        return false;
-    servers = it->second;
-    return true;
-}
-
-std::map<std::string, std::vector<TcpServer::ptr> >& ServerManager::GetListOfServer()
-{
-    return m_servers;
 }
 
 // private
@@ -240,6 +248,7 @@ int ServerManager::main(int argc, char** argv)
 
     m_mainIOManager.reset(new IOManager(1, true, "main"));
     LoggerMgr::GetInstance()->reopen();
+    WorkerMgr::GetInstance()->init(g_worker_config->getValue());
     log_info << "main start";
     m_mainIOManager->schedule(std::bind(&ServerManager::main_fiber, this));
     m_mainIOManager->addTimer(60 * 000,
@@ -248,39 +257,6 @@ int ServerManager::main(int argc, char** argv)
             log_debug << "How old are you? I'm fine, thank you, and you?";
         }, true);
     m_mainIOManager->stop();
-
-    return 0;
-}
-
-// private
-int ServerManager::main_fiber()
-{
-    std::vector<Module::ptr> modules;
-    ModuleMgr::GetInstance()->getList(modules);
-    bool has_error = false;
-    for (auto& i : modules)
-    {
-        if (!i->onLoad())
-        {
-            log_error << i->toString();
-            has_error = true;
-            break;
-        }
-    }
-    if (has_error)
-        _exit(0);
-
-    std::vector<TcpServer::ptr> servers;
-    startServer(servers);
-
-    for (auto& i : modules)
-        i->onServerReady();
-
-    for (auto& i : servers)
-        i->start();
-
-    for (auto& i : modules)
-        i->onServerUp();
 
     return 0;
 }

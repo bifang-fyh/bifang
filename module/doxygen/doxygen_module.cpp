@@ -29,7 +29,7 @@ bool DoxygenModule::onServerReady()
     log_info << "DoxygenModule onServerReady";
 
     std::vector<bifang::TcpServer::ptr> servers;
-    if (!bifang::ServerMgr::GetInstance()->getServer("http", servers))
+    if (!bifang::getServer("http", servers))
     {
         log_error << "no httpserver alive";
         return false;

@@ -146,7 +146,7 @@ std::string Enviroment::getEnv(const std::string& name,
 std::string Enviroment::getAbsolutePath(const std::string& path) const
 {
     if (path.empty())
-        return "/";
+        return "";
     if (path[0] == '/')
         return path;
     return m_cwd + path;
@@ -154,7 +154,7 @@ std::string Enviroment::getAbsolutePath(const std::string& path) const
 
 std::string Enviroment::getConfigPath()
 {
-    return getAbsolutePath(get("c", "configs"));
+    return getAbsolutePath(get("c", ""));
 }
 
 }

@@ -5,6 +5,24 @@
  
 NameLogger("test");
 
+void StdoutLog()
+{
+    uint64_t count = 0;
+    uint64_t before = bifang::getCurrentMS();
+
+    while (count < 5000)
+    {
+        log_debug << "test " << ++count;
+        log_info << "test " << ++count;
+        log_warn << "test " << ++count;
+        log_error << "test " << ++count;
+        log_fatal << "test " << ++count;
+    }
+
+    uint64_t after = bifang::getCurrentMS();
+    std::cout << "output " << count << " message need " << after - before << "ms" << std::endl;
+}
+
 void log_test()
 {
     uint64_t count = 0;
@@ -17,25 +35,28 @@ void log_test()
     std::cout << "output " << count << " message need " << after - before << "ms" << std::endl;
 }
 
-void SetFileLog()
+void FileLog()
 {
     bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
-    bifang::FileLogAppender::ptr appender(new bifang::FileLogAppender("logs/file_log.txt"));
+    bifang::FileLogAppender::ptr appender(new bifang::FileLogAppender("logs/file_log.txt", 0, ""));
     log->add(appender);
+    log_test();
 }
 
-void SetAsyncLog()
+void AsyncLog()
 {
     bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
-    bifang::AsyncLogAppender::ptr appender(new bifang::AsyncLogAppender("logs/async_log.txt", 4000));
+    bifang::AsyncLogAppender::ptr appender(new bifang::AsyncLogAppender("logs/async_log.txt", 4000, 0, ""));
     log->add(appender);
+    log_test();
 }
 
-void SetUDPLog()
+void UDPLog()
 {
     bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
     bifang::UDPLogAppender::ptr appender(new bifang::UDPLogAppender("127.0.0.1:7777", 4000));
     log->add(appender);
+    log_test();
 }
 
 int main(int argc, char* argv[])
@@ -47,18 +68,18 @@ int main(int argc, char* argv[])
     }
     
     if (!strcmp(argv[1], "0"))
-        SetFileLog();
+        StdoutLog();
     else if (!strcmp(argv[1], "1"))
-        SetAsyncLog();
+        FileLog();
     else if (!strcmp(argv[1], "2"))
-        SetUDPLog();
+        AsyncLog();
+    else if (!strcmp(argv[1], "3"))
+        UDPLog();
     else
     {
-        std::cout << "log mode input fail(vaild: 0, 1, 2)" << std::endl;
+        std::cout << "log mode input fail(vaild: 0, 1, 2, 3)" << std::endl;
         return -1;
     }
-
-    log_test();
 
     return 0;
 }

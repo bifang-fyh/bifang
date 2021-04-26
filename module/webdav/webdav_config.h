@@ -24,7 +24,7 @@ namespace webdav
 #define LOCK_MAX_TIMEOUT    (2 * 60)
 
 
-#define ROOT_PATH    "/home/test_smb"
+#define ROOT_PATH    "/home/bifang/src"
 
 
 }

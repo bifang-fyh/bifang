@@ -30,7 +30,7 @@ bool WebDavModule::onServerReady()
     log_info << "WebDavModule onServerReady";
 
     std::vector<bifang::TcpServer::ptr> servers;
-    if (!bifang::ServerMgr::GetInstance()->getServer("http", servers))
+    if (!bifang::getServer("http", servers))
     {
         log_error << "no httpserver alive";
         return false;

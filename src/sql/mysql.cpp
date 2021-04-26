@@ -228,7 +228,6 @@ MySQLStmt::ptr MySQLStmt::create(MySQL::ptr sql, const std::string& stmt)
     auto st = mysql_stmt_init(sql->get().get());
     if (!st)
         return nullptr;
-
     if (mysql_stmt_prepare(st, stmt.c_str(), stmt.size()))
     {
         log_error << "stmt=" << stmt << ", errno=" << mysql_stmt_errno(st)
@@ -288,10 +287,9 @@ bool MySQL::connect()
         return false;
     }
 
-    bool close = false;
-    mysql_options(mysql, MYSQL_OPT_RECONNECT, &close);
+    int auto_reconnect = 0;
+    mysql_options(mysql, MYSQL_OPT_RECONNECT, &auto_reconnect);
     mysql_options(mysql, MYSQL_SET_CHARSET_NAME, "utf8mb4"); // 用utf8mb4是为了兼容unicode
-
     if (mysql_real_connect(mysql, m_host.c_str(), m_user.c_str(),
             m_passwd.c_str(), m_dbname.c_str(), m_port, NULL, 0) == nullptr)
     {
@@ -360,20 +358,52 @@ bool MySQL::execute(const char* format, ...)
         va_end(ap);
     }
 
-    int ret = ::mysql_query(m_mysql.get(), cmd.c_str());
+    if (!m_mysql)
+    {
+        log_error << "m_mysql is NULL";
+        m_hasError = true;
+        return false;
+    }
+
+    int ret = ::mysql_real_query(m_mysql.get(), &cmd[0], cmd.size());
     if (ret)
     {
         log_error << "sql: " << cmd << ", error: " << getErrstr();
         m_hasError = true;
     }
-    else
-        m_hasError = false;
+    m_hasError = false;
+    return !ret;
+}
 
+bool MySQL::execute(const std::string& cmd)
+{
+    if (!m_mysql)
+    {
+        log_error << "m_mysql is NULL";
+        m_hasError = true;
+        return false;
+    }
+
+    int ret = ::mysql_real_query(m_mysql.get(), &cmd[0], cmd.size());
+    if (ret)
+    {
+        log_error << "mysql_real_query(" << cmd << ") error:" << getErrstr();
+        m_hasError = true;
+    }
+
+    m_hasError = false;
     return !ret;
 }
 
 MySQLRes::ptr MySQL::query(const char* format, ...)
 {
+    if (!m_mysql)
+    {
+        log_error << "m_mysql is NULL";
+        m_hasError = true;
+        return nullptr;
+    }
+
     std::string cmd;
     {
         va_list ap;
@@ -388,13 +418,35 @@ MySQLRes::ptr MySQL::query(const char* format, ...)
         va_end(ap);
     }
 
+    if (::mysql_real_query(m_mysql.get(), &cmd[0], cmd.size()))
+    {
+        log_error << "mysql_real_query(" << cmd << ") error:" << getErrstr();
+        m_hasError = true;
+        return nullptr;
+    }
+    MYSQL_RES* res = mysql_store_result(m_mysql.get());
+    if (res == nullptr)
+    {
+        log_error << "mysql_store_result(" << cmd << ") error:" << getErrstr();
+        m_hasError = true;
+        return nullptr;
+    }
+
+    m_hasError = false;
+    MySQLRes::ptr ret(new MySQLRes(res));
+    return ret;
+}
+
+MySQLRes::ptr MySQL::query(const std::string& cmd)
+{
     if (!m_mysql)
     {
         log_error << "m_mysql is NULL";
         m_hasError = true;
         return nullptr;
     }
-    if (::mysql_query(m_mysql.get(), cmd.c_str()))
+
+    if (::mysql_real_query(m_mysql.get(), &cmd[0], cmd.size()))
     {
         log_error << "mysql_query(" << cmd << ") error:" << getErrstr();
         m_hasError = true;
@@ -446,13 +498,28 @@ bool MySQLTransaction::execute(const char* format, ...)
         }
         va_end(ap);
     }
-    
+
     if (m_isFinished)
     {
         log_error << "transaction is finished, sql: " << cmd;
         return false;
     }
-    bool ret = m_mysql->execute(cmd.c_str());
+
+    bool ret = m_mysql->execute(cmd);
+    if (!ret)
+        m_hasError = true;
+    return ret;
+}
+
+bool MySQLTransaction::execute(const std::string& cmd)
+{
+    if (m_isFinished)
+    {
+        log_error << "transaction is finished, sql: " << cmd;
+        return false;
+    }
+
+    bool ret = m_mysql->execute(cmd);
     if (!ret)
         m_hasError = true;
     return ret;
@@ -502,19 +569,17 @@ MySQL::ptr MySQLManager::get(const std::string& name)
             lock.unlock();
             if (!ret->needToCheck())
             {
-                ret->m_lastUsedTime = time(0);
                 return MySQL::ptr(ret, std::bind(&MySQLManager::freeMySQL, this,
                            name, std::placeholders::_1));
             }
             if (ret->ping())
             {
-                ret->m_lastUsedTime = time(0);
                 return MySQL::ptr(ret, std::bind(&MySQLManager::freeMySQL, this,
                            name, std::placeholders::_1));
             }
             else if (ret->connect())
             {
-                ret->m_lastUsedTime = time(0);
+                ret->setLastUsedTime(time(0));
                 return MySQL::ptr(ret, std::bind(&MySQLManager::freeMySQL, this,
                            name, std::placeholders::_1));
             }
@@ -542,7 +607,7 @@ MySQL::ptr MySQLManager::get(const std::string& name)
                          n->second.passwd, n->second.dbname, n->second.poolSize);
     if (ret->connect())
     {
-        ret->m_lastUsedTime = time(0);
+        ret->setLastUsedTime(time(0));
         return MySQL::ptr(ret, std::bind(&MySQLManager::freeMySQL, this,
                    name, std::placeholders::_1));
     }
@@ -569,13 +634,24 @@ bool MySQLManager::execute(const std::string& name, const char* format, ...)
         va_end(ap);
     }
 
-    auto connection = get(name);
+    MySQL::ptr connection = get(name);
     if (!connection)
     {
         log_error << "MySQLManager::execute, get(" << name << ") fail, sql: " << cmd;
         return false;
     }
-    return connection->execute(cmd.c_str());
+    return connection->execute(cmd);
+}
+
+bool MySQLManager::execute(const std::string& name, const std::string& cmd)
+{
+    MySQL::ptr connection = get(name);
+    if (!connection)
+    {
+        log_error << "MySQLManager::execute, get(" << name << ") fail, sql: " << cmd;
+        return false;
+    }
+    return connection->execute(cmd);
 }
 
 MySQLRes::ptr MySQLManager::query(const std::string& name, const char* format, ...)
@@ -594,13 +670,24 @@ MySQLRes::ptr MySQLManager::query(const std::string& name, const char* format, .
         va_end(ap);
     }
 
-    auto connection = get(name);
+    MySQL::ptr connection = get(name);
     if (!connection)
     {
         log_error << "MySQLManager::query, get(" << name << ") fail, sql: " << cmd;
         return nullptr;
     }
-    return connection->query(cmd.c_str());
+    return connection->query(cmd);
+}
+
+MySQLRes::ptr MySQLManager::query(const std::string& name, const std::string& cmd)
+{
+    MySQL::ptr connection = get(name);
+    if (!connection)
+    {
+        log_error << "MySQLManager::query, get(" << name << ") fail, sql: " << cmd;
+        return nullptr;
+    }
+    return connection->query(cmd);
 }
 
 MySQLTransaction::ptr MySQLManager::openTransaction(const std::string& name,
@@ -635,7 +722,7 @@ void MySQLManager::checkConnection(int sec)
     {
         for (auto it = i.second.begin(); it != i.second.end();)
         {
-            if ((int)(now - (*it)->m_lastUsedTime) >= sec)
+            if ((int)(now - (*it)->getLastUsedTime()) >= sec)
             {
                 connections.push_back(*it);
                 i.second.erase(it++);
@@ -653,7 +740,7 @@ void MySQLManager::checkConnection(int sec)
 void MySQLManager::freeMySQL(const std::string& name, MySQL* m)
 {
     MutexType::Lock lock(m_mutex);
-    if (m_connections[name].size() < (size_t)m->m_poolSize)
+    if (m_connections[name].size() < (size_t)m->getPoolSize())
     {
         m_connections[name].push_back(m);
         return;
@@ -681,7 +768,12 @@ bool execute(const std::string& name, const char* format, ...)
         }
         va_end(ap);
     }
-    return mysql::MySQLMgr::GetInstance()->execute(name, cmd.c_str());
+    return mysql::MySQLMgr::GetInstance()->execute(name, cmd);
+}
+
+bool execute(const std::string& name, const std::string& cmd)
+{
+    return mysql::MySQLMgr::GetInstance()->execute(name, cmd);
 }
 
 mysql::MySQLRes::ptr query(const std::string& name, const char* format, ...)
@@ -700,6 +792,11 @@ mysql::MySQLRes::ptr query(const std::string& name, const char* format, ...)
         va_end(ap);
     }
     return mysql::MySQLMgr::GetInstance()->query(name, cmd.c_str());
+}
+
+mysql::MySQLRes::ptr query(const std::string& name, const std::string& cmd)
+{
+    return mysql::MySQLMgr::GetInstance()->query(name, cmd);
 }
 
 mysql::MySQLTransaction::ptr openTransaction(const std::string& name,

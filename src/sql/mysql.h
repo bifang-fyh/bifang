@@ -12,7 +12,6 @@
 #include <string.h>
 #include <time.h>
 
-#include <mysql/mysql.h>
 #include "singleton.h"
 #include "util.h"
 #include "version.h"
@@ -22,6 +21,7 @@
 #include "Assert.h"
 
 #ifdef MYSQL_ENABLE
+#include <mysql/mysql.h>
 
 namespace bifang
 {
@@ -92,11 +92,10 @@ public:
         }
         // 数据集当前指向的行数据(MYSQL_ROW = char**)
         MYSQL_ROW cur = mysql_fetch_row(m_res.get());
-        // 当前行每一列的数据长度
-        unsigned long* curLength = mysql_fetch_lengths(m_res.get());
         if (!cur)
             return false;
-
+        // 当前行每一列的数据长度
+        unsigned long* curLength = mysql_fetch_lengths(m_res.get());
         int len = mysql_num_fields(m_res.get());
         for (int i = 0; i < len; i++)
         {
@@ -461,7 +460,10 @@ public:
     {
         m_binds[idx].buffer_type = MYSQL_TYPE_NULL;
         if (m_binds[idx].buffer != nullptr)
+        {
             free(m_binds[idx].buffer);
+            m_binds[idx].buffer = nullptr;
+        }
     }
     void bind(int idx, const int8_t& value)
     {
@@ -565,7 +567,6 @@ private:
  */
 class MySQL : public std::enable_shared_from_this<MySQL>
 {
-friend class MySQLManager;
 public:
     typedef std::shared_ptr<MySQL> ptr;
 
@@ -604,10 +605,11 @@ public:
 
     std::shared_ptr<MYSQL> get() const { return m_mysql; }
 
-    bool needToCheck() const
-    {
-        return !(time(0) - m_lastUsedTime < 30 && !m_hasError);
-    }
+    uint64_t getLastUsedTime() const { return m_lastUsedTime; }
+    uint32_t getPoolSize() const     { return m_poolSize;     }
+    bool needToCheck() const { return !(time(0) - m_lastUsedTime < 30 && !m_hasError); }
+
+    void setLastUsedTime(uint64_t v) { m_lastUsedTime = v; }
 
 public:
     /**
@@ -633,8 +635,10 @@ public:
     bool use(const std::string& dbname);
 
     bool execute(const char* format, ...);
+    bool execute(const std::string& cmd);
 
     MySQLRes::ptr query(const char* format, ...);
+    MySQLRes::ptr query(const std::string& cmd);
 
     /**
      * brief: 创建一个当前sql的预处理
@@ -736,6 +740,7 @@ public:
     }
 
     bool execute(const char* format, ...);
+    bool execute(const std::string& cmd);
 
 private:
     // 持有MySQL类的智能指针
@@ -767,8 +772,10 @@ public:
     MySQL::ptr get(const std::string& name);
 
     bool execute(const std::string& name, const char* format, ...);
+    bool execute(const std::string& name, const std::string& cmd);
 
     MySQLRes::ptr query(const std::string& name, const char* format, ...);
+    MySQLRes::ptr query(const std::string& name, const std::string& cmd);
 
     MySQLStmt::ptr openPrepare(const std::string& name, const std::string& cmd);
 
@@ -793,8 +800,10 @@ typedef bifang::Singleton<MySQLManager> MySQLMgr;
 namespace MySQLUtil
 {
     bool execute(const std::string& name, const char* format, ...);
+    bool execute(const std::string& name, const std::string& cmd);
 
     mysql::MySQLRes::ptr query(const std::string& name, const char* format, ...);
+    mysql::MySQLRes::ptr query(const std::string& name, const std::string& cmd);
 
     mysql::MySQLStmt::ptr openPrepare(const std::string& name, const std::string& cmd);
 

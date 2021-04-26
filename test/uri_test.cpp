@@ -3,11 +3,24 @@
  */
 #include "bifang.h"
 
-
 void uri_test(const std::string& uristr)
 {
-    bifang::Uri::ptr uri = bifang::Uri::create(uristr);
-    std::cout << uri->toString() << std::endl;
+    std::cout << "start parse uri:" << uristr << std::endl;
+    Uri::ptr uri = Uri::create(uristr);
+    if (uri)
+    {
+        std::cout << "uri parse successful" << std::endl;
+        std::cout << "scheme:" << uri->getScheme() << std::endl
+                  << "userinfo:" << uri->getUserinfo() << std::endl
+                  << "host:" << uri->getHost() << std::endl
+                  << "port:" << uri->getPort() << std::endl
+                  << "path:" << uri->getPath() << std::endl
+                  << "query:" << uri->getQuery() << std::endl
+                  << "fragment:" << uri->getFragment() << std::endl;
+    }
+    else
+        std::cout << "uri parse fail" << std::endl;
+    std::cout << std::endl;
 }
 
 int main(int argc, char* argv[])

@@ -4,10 +4,11 @@
 #ifndef __BIFANG_ENDIAN_CPP_H
 #define __BIFANG_ENDIAN_CPP_H
 
-// BYTE_ORDER BIG_ENDIAN LITTLE_ENDIAN
 
 #include <type_traits>
 #include <stdint.h>
+#include "version.h"
+
 
 namespace bifang
 {
@@ -50,7 +51,7 @@ byteswap(T value)
 }
 
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if BIFANG_ENDIAN
 
 // 只在小端机器上执行byteswap, 在大端机器上什么都不做
 template<class T>

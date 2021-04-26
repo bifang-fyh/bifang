@@ -16,7 +16,7 @@ SRC_OBJS = \
 	objs/Assert.o \
 	objs/thread.o \
 	objs/util.o \
-	objs/Bencode.o \
+	objs/bencode.o \
 	objs/process.o \
 	objs/log.o \
 	objs/address.o \
@@ -75,7 +75,7 @@ SRC_DEPS = \
 	src/Assert.h \
 	src/thread.h \
 	src/util.h \
-	src/Bencode.h \
+	src/bencode.h \
 	src/process.h \
 	src/log.h \
 	src/address.h \
@@ -146,11 +146,11 @@ bifang:objs/bifang.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成服务端测试代码
-server:objs/iomanager_test.o shared $(SRC_DEPS)
+server:objs/log_test.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成客户端测试代码
-client:objs/redis_test.o shared $(SRC_DEPS) 
+client:objs/thread_test.o shared $(SRC_DEPS) 
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
 
 #生成测试代码的.o文件

@@ -4,21 +4,19 @@
 #ifndef __BIFANG_REDIS_H
 #define __BIFANG_REDIS_H
 
-#include <initializer_list>
 #include <unordered_map>
 #include <unordered_set>
 #include <map>
 #include <set>
 
-#include <hiredis/hiredis.h>
 #include "singleton.h"
 #include "util.h"
 #include "version.h"
 #include "lock.h"
 #include "config.h"
 
-
 #ifdef REDIS_ENABLE
+#include <hiredis/hiredis.h>
 
 namespace bifang
 {
@@ -255,7 +253,7 @@ public:
      * return: -1   - 类型不正确或者其他错误
      *         其他 - 被成功移除的字段的数量, 不包括被忽略的域
      */
-    int64_t hdel(const std::string& key, std::initializer_list<std::string> fields);
+    int64_t hdel(const std::string& key, std::unordered_set<std::string> fields);
 
     /**
      * brief: 返回哈希表中字段的数量
@@ -362,9 +360,7 @@ public:
      *         其他 - 被移除元素的数量
      */
     int64_t lrem(const std::string& key, int64_t count, const std::string& value);
-/*----------list----------*/
 
-/*----------set----------*/
     /**
      * brief: 将列表key下标为index的元素的值设置为value
      * param: key 需设置的key
@@ -374,7 +370,9 @@ public:
      *         false - 修改失败(类型不正确或者其他原因)
      */
     bool lset(const std::string& key, int64_t index, const std::string& value);
+/*----------list----------*/
 
+/*----------set----------*/
     /**
      * brief: 将一个或多个member元素加入到集合key当中, 已经存在于集合的member的
      *        元素将被忽略, 假如key不存在, 则创建一个只包含member元素作成员的集合
@@ -383,7 +381,8 @@ public:
      * return: -1   - 类型不正确或其他错误
      *         其他 - 插入成功个数
      */
-    int64_t sadd(const std::string& key, std::initializer_list<std::string> members);
+    int64_t sadd(const std::string& key, const std::string& member);
+    int64_t sadd(const std::string& key, std::unordered_set<std::string> members);
 
     /**
      * brief: 移除集合key中的一个或多个member元素, 不存在的member元素会被忽略
@@ -392,7 +391,7 @@ public:
      * return: -1   - 类型不正确或其他错误
      *         其他 - 被成功移除的元素的数量, 不包括被忽略的元素
      */
-    int64_t srem(const std::string& key, std::initializer_list<std::string> members);
+    int64_t srem(const std::string& key, std::unordered_set<std::string> members);
 
     /**
      * brief: 返回集合key中的所有成员, 不存在的key被视为空集合
@@ -432,21 +431,21 @@ public:
      * param: keys 需查找交集的key列表
      * return: 交集成员的列表, 出错或者没有交集则返回空集
      */
-    std::unordered_set<std::string> sinter(std::initializer_list<std::string> keys);
+    std::unordered_set<std::string> sinter(std::unordered_set<std::string> keys);
 
     /**
      * brief: 返回一个集合的全部成员，该集合是所有给定集合的并集
      * param: keys 需查找并集的key列表
      * return: 并集成员的列表, 出错或者没有并集则返回空集
      */
-    std::unordered_set<std::string> sunion(std::initializer_list<std::string> keys);
+    std::unordered_set<std::string> sunion(std::unordered_set<std::string> keys);
 
     /**
      * brief: 返回一个集合的全部成员, 该集合是所有给定集合之间的差集
      * param: keys 需查找差集的key列表
      * return: 差集成员的列表, 出错或者没有差集则返回空集
      */
-    std::unordered_set<std::string> sdiff(std::initializer_list<std::string> keys);
+    std::unordered_set<std::string> sdiff(std::unordered_set<std::string> keys);
 /*----------set----------*/
 
 /*----------zset----------*/
@@ -457,16 +456,16 @@ public:
      * return: -1   - 类型不正确或其他错误
      *         其他 - 被成功添加的新成员的数量, 不包括那些被更新的或已经存在的成员
      */
-    int64_t zadd(const std::string& key, std::initializer_list<std::pair<double, std::string>> score_members);
+    int64_t zadd(const std::string& key, std::unordered_map<double, std::string> score_members);
 
     /**
      * brief: 移除集合key中的一个或多个member元素, 不存在的member元素会被忽略
      * param: key 需设置的key
-     *        member 需插入的score和member组成的对的列表
+     *        member 需移除的member组成的对的列表
      * return: -1   - 类型不正确或其他错误
      *         其他 - 被成功移除元素的数量, 不包括被忽略的元素
      */
-    int64_t zrem(const std::string& key, std::initializer_list<std::string> members);
+    int64_t zrem(const std::string& key, std::unordered_set<std::string> members);
 
     /**
      * brief: 返回有序集key中元素的个数

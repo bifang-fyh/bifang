@@ -12,7 +12,7 @@
 #include "lock.h"
 #include "thread.h"
 #include "util.h"
-#include "Bencode.h"
+#include "bencode.h"
 #include "process.h"
 #include "log.h"
 #include "address.h"
