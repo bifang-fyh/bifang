@@ -24,10 +24,10 @@ MODULE_DEPS = \
 modules:$(MODULE_PATH)/$(SOFILE)
 
 $(MODULE_PATH)/$(SOFILE):$(MODULE_OBJS)
-	$(CPP) $(CFLAGS) $(SRC_INCS) $(CLIBS) -shared -o $@ $^
+	$(CPP) $(CFLAGS) $(SRC_INCS) $(CLIBS) $(LTCMALLOC) -shared -o $@ $^
 
 $(COBJS)/%.o:$(CPATH)/%.cpp $(SRC_DEPS) $(MODULE_DEPS)
-	$(CPP) -c $(CFLAGS) $(SRC_INCS) $(CLIBS) $< -o $@
+	$(CPP) -c $(CFLAGS) $(SRC_INCS) $(CLIBS) $(LTCMALLOC) $< -o $@
 
 clean:
 	rm -rf $(COBJS)/ $(modules)

@@ -21,7 +21,7 @@ void test_fiber()
     log_info << "test_fiber begin";
     {
         bifang::Fiber::getThis();
-        bifang::Fiber::ptr fiber(new bifang::Fiber(run_in_fiber, 256 * 1024, true));
+        bifang::Fiber::ptr fiber(new bifang::Fiber(run_in_fiber, true));
         fiber->call();
         log_info << "test_fiber after call 1";
         fiber->call();

@@ -8,7 +8,9 @@ $(shell test -d logs || mkdir logs)
 $(shell test -d libs || mkdir libs)
 
 CPP = g++
-CFLAGS = -std=c++11 -pipe -O1 -W -fPIC -g
+CFLAGS = -std=c++11 -pipe -O1 -W -fPIC
+#-g
+LTCMALLOC = -ltcmalloc_minimal
 CLIBS = -lpthread -lm -ldl -lz -lssl -lcrypto -lmysqlclient -lhiredis
 DYNAMIC_PATH = libs/libbifang.so
 
@@ -139,19 +141,19 @@ all: bifang server client
 
 #生成动态链接库
 shared:$(SRC_OBJS)
-	$(CPP) $(CFLAGS) $(SRC_INCS) $(CLIBS) -shared -o $(DYNAMIC_PATH) $^
+	$(CPP) $(CFLAGS) $(SRC_INCS) $(CLIBS) $(LTCMALLOC) -shared -o $(DYNAMIC_PATH) $^
 
 #生成可执行文件
 bifang:objs/bifang.o shared $(SRC_DEPS)
-	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
+	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成服务端测试代码
-server:objs/log_test.o shared $(SRC_DEPS)
-	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
+server:objs/malloc_test.o shared $(SRC_DEPS)
+	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成客户端测试代码
-client:objs/thread_test.o shared $(SRC_DEPS) 
-	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang -o $@ $<
+client:objs/fiber_test.o shared $(SRC_DEPS) 
+	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成测试代码的.o文件
 objs/%.o:test/%.cpp $(SRC_DEPS)
@@ -177,7 +179,7 @@ objs/%.o:src/http/%.cpp $(SRC_DEPS)
 objs/%.o:src/ws/%.cpp $(SRC_DEPS) 
 	$(CPP) -c $(CFLAGS) $(SRC_INCS) $< -o $@
 
-#生成WEBSOCKET库的.o文件
+#生成SQL库的.o文件
 objs/%.o:src/sql/%.cpp $(SRC_DEPS) 
 	$(CPP) -c $(CFLAGS) $(SRC_INCS) $< -o $@
 
@@ -185,6 +187,7 @@ objs/%.o:src/sql/%.cpp $(SRC_DEPS)
 #编译模块文件
 export SRC_DEPS
 export SRC_INCS
+export LTCMALLOC
 module:
 	$(MAKE) -f module/Makefile
 

@@ -1,5 +1,5 @@
 /**
- * brief: 日志简单
+ * brief: 日志器简单测试
  */
 #include "bifang.h"
  
@@ -83,3 +83,4 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+

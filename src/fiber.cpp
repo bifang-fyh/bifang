@@ -45,7 +45,7 @@ Fiber::Fiber()
     log_debug << "Fiber::Fiber main, id=" << m_id;
 }
 
-Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool use_caller)
+Fiber::Fiber(std::function<void()> cb, bool use_caller)
     :m_cb(cb)
 {
     Mutex::Lock lock(s_mutex);
@@ -58,14 +58,13 @@ Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool use_caller)
     }
     lock.unlock();
 
-    m_stacksize = stacksize ? stacksize : g_fiber_stack_size->getValue();
-    m_stack = malloc(m_stacksize);
+    m_stack = malloc(g_fiber_stack_size->getValue());
 
     if (getcontext(&m_ctx))
         ASSERT_MSG(false, "getcontext");
 
     m_ctx.uc_stack.ss_sp = m_stack;
-    m_ctx.uc_stack.ss_size = m_stacksize;
+    m_ctx.uc_stack.ss_size = g_fiber_stack_size->getValue();
     m_ctx.uc_link = nullptr;
 
     if (!use_caller)
@@ -113,7 +112,7 @@ void Fiber::reset(std::function<void()> cb)
         ASSERT_MSG(false, "getcontext");
 
     m_ctx.uc_stack.ss_sp = m_stack;
-    m_ctx.uc_stack.ss_size = m_stacksize;
+    m_ctx.uc_stack.ss_size = g_fiber_stack_size->getValue();
     m_ctx.uc_link = nullptr;
 
     makecontext(&m_ctx, &Fiber::run, 0);

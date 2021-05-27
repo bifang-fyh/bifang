@@ -43,10 +43,9 @@ public:
     /**
      * brief: 构造函数
      * param: cb 协程执行的函数
-     *        stacksize 协程栈大小
      *        use_caller 是否在主线程上调度
      */
-    Fiber(std::function<void()> cb, size_t stacksize = 0, bool use_caller = false);
+    Fiber(std::function<void()> cb, bool use_caller = false);
 
     /**
      * brief: 析构函数
@@ -127,8 +126,6 @@ public:
 private:
     // 协程id
     uint64_t m_id;
-    // 协程运行栈大小
-    uint32_t m_stacksize = 0;
     // 协程状态
     State m_state = INIT;
     // 协程上下文

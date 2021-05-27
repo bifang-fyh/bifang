@@ -3,15 +3,15 @@
     [
         {
             "name" : "root",
-            "level" : "info",
+            "level" : "error",
             "appenders" :
             [
                 {
                     "type" : "file",
                     "file" : "logs/root.log",
-                    "rolling_time": 18000,
+                    "rolling_time": 86400,
                     "rolling_dir": "logs/root/",
-                    "level" : "info",
+                    "level" : "error",
                     "formatter" : "%d{%Y-%m-%d %H:%M:%S}%T%r%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
                 }
             ]
@@ -19,15 +19,15 @@
 
         {
             "name" : "system",
-            "level" : "info",
+            "level" : "error",
             "appenders" :
             [
                 {
                     "type" : "file",
                     "file" : "logs/system.log",
-                    "rolling_time": 18000,
+                    "rolling_time": 86400,
                     "rolling_dir": "logs/system/",
-                    "level" : "info",
+                    "level" : "error",
                     "formatter" : "%d{%Y-%m-%d %H:%M:%S}%T%r%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
                 }
             ]

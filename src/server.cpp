@@ -251,7 +251,7 @@ int ServerManager::main(int argc, char** argv)
     WorkerMgr::GetInstance()->init(g_worker_config->getValue());
     log_info << "main start";
     m_mainIOManager->schedule(std::bind(&ServerManager::main_fiber, this));
-    m_mainIOManager->addTimer(60 * 000,
+    m_mainIOManager->addTimer(60 * 1000,
         []()
         {
             log_debug << "How old are you? I'm fine, thank you, and you?";

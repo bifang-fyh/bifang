@@ -27,7 +27,7 @@ Scheduler::Scheduler(size_t threadCount, bool use_caller, const std::string& nam
         ASSERT(getThis() == nullptr);
         t_scheduler = this;
 
-        m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
+        m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), true));
         Thread::setName(m_name);
         t_scheduler_fiber = m_rootFiber.get();
         m_rootThread = Thread::getId();

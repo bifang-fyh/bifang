@@ -4,7 +4,7 @@
 #include "Assert.h"
 #include "fdregister.h"
 #include "config.h"
-
+ 
 
 SystemLogger();
 
@@ -15,41 +15,11 @@ static Config<int64_t>::ptr g_tcp_connect_timeout =
            ConfigMgr::GetInstance()->get("system.tcp.connect_timeout", (int64_t)5000, "system tcp connect timeout config");
 
 static thread_local bool t_hook_enable = false;
-
-#define SYS_HOOK(XX) \
-    XX(sleep) \
-    XX(usleep) \
-    XX(nanosleep) \
-    XX(socket) \
-    XX(connect) \
-    XX(accept) \
-    XX(read) \
-    XX(readv) \
-    XX(recv) \
-    XX(recvfrom) \
-    XX(recvmsg) \
-    XX(write) \
-    XX(writev) \
-    XX(send) \
-    XX(sendto) \
-    XX(sendmsg) \
-    XX(close) \
-    XX(fcntl) \
-    XX(setsockopt)
-
-static void hook_init()
-{
-#define XX(name) g_sys_ ## name = (name ## _ptr)dlsym(RTLD_NEXT, #name);
-    SYS_HOOK(XX);
-#undef XX
-}
-
 static int64_t s_connect_timeout = -1;
 struct HookInit
 {
     HookInit()
     {
-        hook_init();
         s_connect_timeout = g_tcp_connect_timeout->getValue();
 
         g_tcp_connect_timeout->addCallback(
@@ -91,7 +61,9 @@ static ssize_t do_io(int fd, OriginFun fun, const char* hook_fun_name,
                    uint32_t event, int timeout_so, Args&&... args)
 {
     if (!bifang::t_hook_enable)
+    {
         return fun(fd, std::forward<Args>(args)...);
+    }
 
     bifang::FdData::ptr data = bifang::FdMgr::GetInstance()->get(fd);
     if (!data)
@@ -151,12 +123,45 @@ good:
 
 extern "C"
 {
+#define SYS_HOOK(XX) \
+    XX(sleep) \
+    XX(usleep) \
+    XX(nanosleep) \
+    XX(socket) \
+    XX(connect) \
+    XX(accept) \
+    XX(read) \
+    XX(readv) \
+    XX(recv) \
+    XX(recvfrom) \
+    XX(recvmsg) \
+    XX(write) \
+    XX(writev) \
+    XX(send) \
+    XX(sendto) \
+    XX(sendmsg) \
+    XX(close) \
+    XX(fcntl) \
+    XX(setsockopt)
+
 #define XX(name) name ## _ptr g_sys_ ## name = nullptr;
     SYS_HOOK(XX);
 #undef XX
 
+static int hook_init()
+{
+#define XX(name) g_sys_ ## name = (name ## _ptr)dlsym(RTLD_NEXT, #name);
+    SYS_HOOK(XX);
+#undef XX
+
+    return 0;
+}
+
 unsigned int sleep(unsigned int seconds)
 {
+    if (UNLIKELY(!g_sys_sleep))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_sleep(seconds);
 
@@ -171,6 +176,9 @@ unsigned int sleep(unsigned int seconds)
 
 int usleep(useconds_t usec)
 {
+    if (UNLIKELY(!g_sys_usleep))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_usleep(usec);
 
@@ -185,6 +193,9 @@ int usleep(useconds_t usec)
 
 int nanosleep(const struct timespec *req, struct timespec *rem)
 {
+    if (UNLIKELY(!g_sys_nanosleep))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_nanosleep(req, rem);
 
@@ -200,6 +211,9 @@ int nanosleep(const struct timespec *req, struct timespec *rem)
 
 int socket(int domain, int type, int protocol)
 {
+    if (UNLIKELY(!g_sys_socket))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_socket(domain, type, protocol);
 
@@ -213,6 +227,9 @@ int socket(int domain, int type, int protocol)
 int connect_with_timeout(int fd, const struct sockaddr* addr,
         socklen_t addrlen, int64_t timeout)
 {
+    if (UNLIKELY(!g_sys_connect))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_connect(fd, addr, addrlen);
 
@@ -277,6 +294,9 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
+    if (UNLIKELY(!g_sys_accept))
+        hook_init();
+
     int fd = do_io(s, g_sys_accept, "accept", bifang::IOContext::READ,
         SO_RCVTIMEO, addr, addrlen);
     if (fd >= 0)
@@ -286,18 +306,27 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 ssize_t read(int fd, void *buf, size_t count)
 {
+    if (UNLIKELY(!g_sys_read))
+        hook_init();
+
     return do_io(fd, g_sys_read, "read", bifang::IOContext::READ,
                SO_RCVTIMEO, buf, count);
 }
 
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt)
 {
+    if (UNLIKELY(!g_sys_readv))
+        hook_init();
+
     return do_io(fd, g_sys_readv, "readv", bifang::IOContext::READ,
                SO_RCVTIMEO, iov, iovcnt);
 }
 
 ssize_t recv(int sockfd, void *buf, size_t len, int flags)
 {
+    if (UNLIKELY(!g_sys_recv))
+        hook_init();
+
     return do_io(sockfd, g_sys_recv, "recv", bifang::IOContext::READ,
                SO_RCVTIMEO, buf, len, flags);
 }
@@ -305,30 +334,45 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags)
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
             struct sockaddr *src_addr, socklen_t *addrlen)
 {
+    if (UNLIKELY(!g_sys_recvfrom))
+        hook_init();
+
     return do_io(sockfd, g_sys_recvfrom, "recvfrom", bifang::IOContext::READ,
                SO_RCVTIMEO, buf, len, flags, src_addr, addrlen);
 }
 
 ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags)
 {
+    if (UNLIKELY(!g_sys_recvmsg))
+        hook_init();
+
     return do_io(sockfd, g_sys_recvmsg, "recvmsg", bifang::IOContext::READ,
                SO_RCVTIMEO, msg, flags);
 }
 
 ssize_t write(int fd, const void *buf, size_t count)
 {
+    if (UNLIKELY(!g_sys_write))
+        hook_init();
+
     return do_io(fd, g_sys_write, "write", bifang::IOContext::WRITE,
                SO_SNDTIMEO, buf, count);
 }
 
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt)
 {
+    if (UNLIKELY(!g_sys_writev))
+        hook_init();
+
     return do_io(fd, g_sys_writev, "writev", bifang::IOContext::WRITE,
                SO_SNDTIMEO, iov, iovcnt);
 }
 
 ssize_t send(int s, const void *msg, size_t len, int flags)
 {
+    if (UNLIKELY(!g_sys_send))
+        hook_init();
+
     return do_io(s, g_sys_send, "send", bifang::IOContext::WRITE,
                SO_SNDTIMEO, msg, len, flags);
 }
@@ -336,18 +380,27 @@ ssize_t send(int s, const void *msg, size_t len, int flags)
 ssize_t sendto(int s, const void *msg, size_t len, int flags,
     const struct sockaddr *to, socklen_t tolen)
 {
+    if (UNLIKELY(!g_sys_sendto))
+        hook_init();
+
     return do_io(s, g_sys_sendto, "sendto", bifang::IOContext::WRITE,
                SO_SNDTIMEO, msg, len, flags, to, tolen);
 }
 
 ssize_t sendmsg(int s, const struct msghdr *msg, int flags)
 {
+    if (UNLIKELY(!g_sys_sendmsg))
+        hook_init();
+
     return do_io(s, g_sys_sendmsg, "sendmsg", bifang::IOContext::WRITE,
                SO_SNDTIMEO, msg, flags);
 }
 
 int close(int fd)
 {
+    if (UNLIKELY(!g_sys_close))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_close(fd);
 
@@ -365,6 +418,9 @@ int close(int fd)
 
 int fcntl(int fd, int cmd, ...)
 {
+    if (UNLIKELY(!g_sys_fcntl))
+        hook_init();
+
     va_list va;
     va_start(va, cmd);
     int ret = -1;
@@ -443,6 +499,9 @@ int fcntl(int fd, int cmd, ...)
 int setsockopt(int sockfd, int level, int optname, const void *optval,
         socklen_t optlen)
 {
+    if (UNLIKELY(!g_sys_setsockopt))
+        hook_init();
+
     if (UNLIKELY(!bifang::t_hook_enable))
         return g_sys_setsockopt(sockfd, level, optname, optval, optlen);
 
