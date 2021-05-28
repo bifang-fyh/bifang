@@ -19,12 +19,9 @@ public:
     bool init(int argc, char** argv);
     bool run();
 
-    void startServer(std::vector<TcpServer::ptr>& servers);
-
 private:
     int main(int argc, char** argv);
 
-public:
     virtual int main_fiber() = 0;
 
 protected:
@@ -34,6 +31,8 @@ protected:
     std::string m_config_path;
     IOManager::ptr m_mainIOManager;
 };
+
+extern std::map<std::string, std::vector<TcpServer::ptr> > g_servers;
 
 bool getServer(const std::string& type, std::vector<TcpServer::ptr>& servers);
 const std::map<std::string, std::vector<TcpServer::ptr> >& getListOfServer();

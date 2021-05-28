@@ -13,7 +13,7 @@ namespace doxygen
 #define MODULE_VERSION    "1.0"
 #define DEFAULT_FILE      "index.html"
 #define URI_PATH          "/doxygen"
-#define ROOT_PATH         "/home/bifang/src/doxygen/html"
+#define ROOT_PATH         "/home/bifang/src/git_code/doxygen/html"
 
 
 }

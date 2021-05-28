@@ -146,7 +146,7 @@ bool Socket::connect(const Address::ptr addr, int64_t timeout_ms)
     {
         if (::connect(m_sock, addr->getAddr(), addr->getAddrLen()))
         {
-            log_error << "sock=" << m_sock
+            log_debug << "sock=" << m_sock
                 << " connect(" << addr->toString()
                 << "), error errno=" << errno << ", errstr=" << strerror(errno);
             close();
@@ -157,7 +157,7 @@ bool Socket::connect(const Address::ptr addr, int64_t timeout_ms)
     {
         if (::connect_with_timeout(m_sock, addr->getAddr(), addr->getAddrLen(), timeout_ms))
         {
-            log_error << "sock=" << m_sock
+            log_debug << "sock=" << m_sock
                 << " connect(" << addr->toString()
                 << "), timeout=" << timeout_ms << ", errno=" << errno
                 << ", errstr=" << strerror(errno);
