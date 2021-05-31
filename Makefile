@@ -122,7 +122,43 @@ SRC_DEPS = \
 	src/ws/ws_server.h \
 	\
 	src/sql/mysql.h \
-	src/sql/redis.h
+	src/sql/redis.h \
+	\
+	src/cppjieba/DictTrie.hpp \
+	src/cppjieba/FullSegment.hpp \
+	src/cppjieba/HMMModel.hpp \
+	src/cppjieba/HMMSegment.hpp \
+	src/cppjieba/Jieba.hpp \
+	src/cppjieba/KeywordExtractor.hpp \
+	src/cppjieba/MixSegment.hpp \
+	src/cppjieba/MPSegment.hpp \
+	src/cppjieba/PosTagger.hpp \
+	src/cppjieba/PreFilter.hpp \
+	src/cppjieba/QuerySegment.hpp \
+	src/cppjieba/SegmentBase.hpp \
+	src/cppjieba/SegmentTagged.hpp \
+	src/cppjieba/TextRankExtractor.hpp \
+	src/cppjieba/Trie.hpp \
+	src/cppjieba/Unicode.hpp \
+	src/cppjieba/limonp/ArgvContext.hpp \
+	src/cppjieba/limonp/BlockingQueue.hpp \
+	src/cppjieba/limonp/BoundedBlockingQueue.hpp \
+	src/cppjieba/limonp/BoundedQueue.hpp \
+	src/cppjieba/limonp/Closure.hpp \
+	src/cppjieba/limonp/Colors.hpp \
+	src/cppjieba/limonp/Condition.hpp \
+	src/cppjieba/limonp/Config.hpp \
+	src/cppjieba/limonp/FileLock.hpp \
+	src/cppjieba/limonp/ForcePublic.hpp \
+	src/cppjieba/limonp/LocalVector.hpp \
+	src/cppjieba/limonp/Logging.hpp \
+	src/cppjieba/limonp/Md5.hpp \
+	src/cppjieba/limonp/MutexLock.hpp \
+	src/cppjieba/limonp/NonCopyable.hpp \
+	src/cppjieba/limonp/StdExtension.hpp \
+	src/cppjieba/limonp/StringUtil.hpp \
+	src/cppjieba/limonp/Thread.hpp \
+	src/cppjieba/limonp/ThreadPool.hpp
 
 SRC_INCS = \
 	-I src \
@@ -131,6 +167,8 @@ SRC_INCS = \
 	-I src/http \
 	-I src/ws \
 	-I src/sql \
+	-I src/cppjieba \
+	-I src/cppjieba/limonp \
 	-L libs \
 	-L /usr/lib64/mysql \
 	-L /usr/lib64 \
@@ -153,7 +191,7 @@ server:objs/malloc_test.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成客户端测试代码
-client:objs/fiber_test.o shared $(SRC_DEPS) 
+client:objs/cppjieba_test.o shared $(SRC_DEPS) 
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成测试代码的.o文件
