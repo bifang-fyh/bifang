@@ -1,4 +1,4 @@
-.PHONY:all shared bifang server client module module_clean ragel clean
+.PHONY:all shared bifang test module module_clean ragel clean
 
 #生成目标文件存放目录
 $(shell test -d objs || mkdir objs)
@@ -137,7 +137,8 @@ SRC_INCS = \
 	-Wl,--copy-dt-needed-entries \
 	-Wl,-rpath=libs
 
-all: bifang server client
+all: bifang
+test: server client
 
 #生成动态链接库
 shared:$(SRC_OBJS)
