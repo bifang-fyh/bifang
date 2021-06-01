@@ -5,34 +5,24 @@
  
 NameLogger("test");
 
-void StdoutLog()
+void log_test(uint64_t cnt)
 {
     uint64_t count = 0;
     uint64_t before = bifang::getCurrentMS();
 
-    while (count < 5000)
-    {
-        log_debug << "test " << ++count;
+    while (count < cnt)
         log_info << "test " << ++count;
-        log_warn << "test " << ++count;
-        log_error << "test " << ++count;
-        log_fatal << "test " << ++count;
-    }
 
     uint64_t after = bifang::getCurrentMS();
     std::cout << "output " << count << " message need " << after - before << "ms" << std::endl;
 }
 
-void log_test()
+void StdoutLog()
 {
-    uint64_t count = 0;
-    uint64_t before = bifang::getCurrentMS();
-
-    while (count < 500000)
-        log_info << "test " << ++count;
-
-    uint64_t after = bifang::getCurrentMS();
-    std::cout << "output " << count << " message need " << after - before << "ms" << std::endl;
+    bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
+    bifang::StdoutLogAppender::ptr appender(new bifang::StdoutLogAppender(true));
+    log->add(appender);
+    log_test(1000);
 }
 
 void FileLog()
@@ -40,7 +30,7 @@ void FileLog()
     bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
     bifang::FileLogAppender::ptr appender(new bifang::FileLogAppender("logs/file_log.txt", 0, ""));
     log->add(appender);
-    log_test();
+    log_test(500000);
 }
 
 void AsyncLog()
@@ -48,7 +38,7 @@ void AsyncLog()
     bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
     bifang::AsyncLogAppender::ptr appender(new bifang::AsyncLogAppender("logs/async_log.txt", 4000, 0, ""));
     log->add(appender);
-    log_test();
+    log_test(500000);
 }
 
 void UDPLog()
@@ -56,7 +46,7 @@ void UDPLog()
     bifang::Logger::ptr log = bifang::LoggerMgr::GetInstance()->get("test");
     bifang::UDPLogAppender::ptr appender(new bifang::UDPLogAppender("127.0.0.1:7777", 4000));
     log->add(appender);
-    log_test();
+    log_test(500000);
 }
 
 int main(int argc, char* argv[])

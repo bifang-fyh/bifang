@@ -345,6 +345,7 @@ struct LogAppenderDefine
     std::string file;
     uint64_t rolling_time = 0; // file, async(rolling interval)
     std::string rolling_dir; // file, async(rolling directory)
+    bool color = true; // stdout
 
     bool operator==(const LogAppenderDefine& oth) const
     {
@@ -355,7 +356,8 @@ struct LogAppenderDefine
             && formatter == oth.formatter
             && file == oth.file
             && rolling_time == oth.rolling_time
-            && rolling_dir == oth.rolling_dir;
+            && rolling_dir == oth.rolling_dir
+            && color == oth.color;
     }
 };
 /**
@@ -416,7 +418,13 @@ struct LexicalCast<std::string, LogDefine>
 
                 LogAppenderDefine lad;
                 if (type == "stdout")
+                {
                     lad.type = 1;
+                    if (appender.isMember("color"))
+                    {
+                        lad.color = (bool)appender["color"].asUInt();
+                    }
+                }
                 else if (type == "file")
                 {
                     lad.type = 2;
@@ -538,6 +546,7 @@ struct LexicalCast<LogDefine, std::string>
             {
                 case 1:
                     n["type"] = "stdout";
+                    n["color"] = (int)a.color;
                     break;
                 case 2:
                     n["type"] = "file";

@@ -184,7 +184,7 @@ bifang:objs/bifang.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成服务端测试代码
-server:objs/malloc_test.o shared $(SRC_DEPS)
+server:objs/log_test.o shared $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(SRC_INCS) -lbifang $(LTCMALLOC) -o $@ $<
 
 #生成客户端测试代码

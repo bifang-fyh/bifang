@@ -417,6 +417,7 @@ std::string StdoutLogAppender::toJsonString()
     MutexType::Lock lock(m_mutex);
     Json::Value root;
     root["type"] = "stdout";
+    root["color"] = (int)m_enable_color;
     root["level"] = LogLevel::toString(m_level);
     root["formatter"] = m_formatter->getPattern();
 
@@ -749,7 +750,7 @@ LoggerManager::LoggerManager()
                     {
                         bifang::LogAppender::ptr ap;
                         if (appender.type == 1)
-                            ap.reset(new StdoutLogAppender);
+                            ap.reset(new StdoutLogAppender(appender.color));
                         else if (appender.type == 2)
                             ap.reset(new FileLogAppender(appender.file, appender.rolling_time, appender.rolling_dir));
                         else if (appender.type == 3)
