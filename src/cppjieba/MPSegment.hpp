@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <set>
 #include <cassert>
-#include "limonp/Logging.hpp"
 #include "DictTrie.hpp"
 #include "SegmentTagged.hpp"
 #include "PosTagger.hpp"

@@ -145,16 +145,13 @@ SRC_DEPS = \
 	src/cppjieba/limonp/BoundedBlockingQueue.hpp \
 	src/cppjieba/limonp/BoundedQueue.hpp \
 	src/cppjieba/limonp/Closure.hpp \
-	src/cppjieba/limonp/Colors.hpp \
 	src/cppjieba/limonp/Condition.hpp \
 	src/cppjieba/limonp/Config.hpp \
 	src/cppjieba/limonp/FileLock.hpp \
 	src/cppjieba/limonp/ForcePublic.hpp \
 	src/cppjieba/limonp/LocalVector.hpp \
-	src/cppjieba/limonp/Logging.hpp \
 	src/cppjieba/limonp/Md5.hpp \
 	src/cppjieba/limonp/MutexLock.hpp \
-	src/cppjieba/limonp/NonCopyable.hpp \
 	src/cppjieba/limonp/StdExtension.hpp \
 	src/cppjieba/limonp/StringUtil.hpp \
 	src/cppjieba/limonp/Thread.hpp \

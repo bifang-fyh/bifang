@@ -4,6 +4,7 @@
 #include <cmath>
 #include <set>
 #include "MixSegment.hpp"
+#include "log.h"
 
 namespace cppjieba {
 
@@ -56,6 +57,7 @@ class KeywordExtractor {
   }
 
   void Extract(const string& sentence, vector<Word>& keywords, size_t topN) const {
+    SystemLogger();
     vector<string> words;
     segment_.Cut(sentence, words);
 
@@ -71,7 +73,7 @@ class KeywordExtractor {
       wordmap[words[i]].weight += 1.0;
     }
     if (offset != sentence.size()) {
-      XLOG(ERROR) << "words illegal";
+      log_error << "words illegal";
       return;
     }
 
@@ -93,8 +95,9 @@ class KeywordExtractor {
   }
  private:
   void LoadIdfDict(const string& idfPath) {
+    SystemLogger();
     ifstream ifs(idfPath.c_str());
-    XCHECK(ifs.is_open()) << "open " << idfPath << " failed";
+    ASSERT_MSG(ifs.is_open(), "open " + idfPath + " failed");
     string line ;
     vector<string> buf;
     double idf = 0.0;
@@ -103,12 +106,12 @@ class KeywordExtractor {
     for (; getline(ifs, line); lineno++) {
       buf.clear();
       if (line.empty()) {
-        XLOG(ERROR) << "lineno: " << lineno << " empty. skipped.";
+        log_error << "lineno: " << lineno << " empty. skipped.";
         continue;
       }
       Split(line, buf, " ");
       if (buf.size() != 2) {
-        XLOG(ERROR) << "line: " << line << ", lineno: " << lineno << " empty. skipped.";
+        log_error << "line: " << line << ", lineno: " << lineno << " empty. skipped.";
         continue;
       }
       idf = atof(buf[1].c_str());
@@ -122,8 +125,9 @@ class KeywordExtractor {
     assert(idfAverage_ > 0.0);
   }
   void LoadStopWordDict(const string& filePath) {
+    SystemLogger();
     ifstream ifs(filePath.c_str());
-    XCHECK(ifs.is_open()) << "open " << filePath << " failed";
+    ASSERT_MSG(ifs.is_open(), "open " + filePath + " failed");
     string line ;
     while (getline(ifs, line)) {
       stopWords_.insert(line);

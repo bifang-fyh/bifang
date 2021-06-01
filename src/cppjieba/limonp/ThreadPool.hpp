@@ -5,13 +5,15 @@
 #include "BlockingQueue.hpp"
 #include "BoundedBlockingQueue.hpp"
 #include "Closure.hpp"
+#include "log.h"
+#include "noncopyable.h"
 
 namespace limonp {
 
 using namespace std;
 
 //class ThreadPool;
-class ThreadPool: NonCopyable {
+class ThreadPool: bifang::Noncopyable {
  public:
   class Worker: public IThread {
    public:
@@ -22,6 +24,7 @@ class ThreadPool: NonCopyable {
     }
 
     virtual void Run() {
+      SystemLogger();
       while (true) {
         ClosureInterface* closure = ptThreadPool_->queue_.Pop();
         if (closure == NULL) {
@@ -30,9 +33,9 @@ class ThreadPool: NonCopyable {
         try {
           closure->Run();
         } catch(std::exception& e) {
-          XLOG(ERROR) << e.what();
+          log_error << e.what();
         } catch(...) {
-          XLOG(ERROR) << " unknown exception.";
+          log_error << " unknown exception.";
         }
         delete closure;
       }

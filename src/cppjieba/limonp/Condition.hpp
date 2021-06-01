@@ -2,30 +2,36 @@
 #define LIMONP_CONDITION_HPP
 
 #include "MutexLock.hpp"
+#include "noncopyable.h"
 
 namespace limonp {
 
-class Condition : NonCopyable {
+class Condition : bifang::Noncopyable {
  public:
   explicit Condition(MutexLock& mutex)
     : mutex_(mutex) {
-    XCHECK(!pthread_cond_init(&pcond_, NULL));
+    SystemLogger();
+    ASSERT(!pthread_cond_init(&pcond_, NULL));
   }
 
   ~Condition() {
-    XCHECK(!pthread_cond_destroy(&pcond_));
+    SystemLogger();
+    ASSERT(!pthread_cond_destroy(&pcond_));
   }
 
   void Wait() {
-    XCHECK(!pthread_cond_wait(&pcond_, mutex_.GetPthreadMutex()));
+    SystemLogger();
+    ASSERT(!pthread_cond_wait(&pcond_, mutex_.GetPthreadMutex()));
   }
 
   void Notify() {
-    XCHECK(!pthread_cond_signal(&pcond_));
+    SystemLogger();
+    ASSERT(!pthread_cond_signal(&pcond_));
   }
 
   void NotifyAll() {
-    XCHECK(!pthread_cond_broadcast(&pcond_));
+    SystemLogger();
+    ASSERT(!pthread_cond_broadcast(&pcond_));
   }
 
  private:

@@ -3,6 +3,7 @@
 
 #include "limonp/StringUtil.hpp"
 #include "Trie.hpp"
+#include "log.h"
 
 namespace cppjieba {
 
@@ -32,44 +33,45 @@ struct HMMModel {
   ~HMMModel() {
   }
   void LoadModel(const string& filePath) {
+    SystemLogger();
     ifstream ifile(filePath.c_str());
-    XCHECK(ifile.is_open()) << "open " << filePath << " failed";
+    ASSERT_MSG(ifile.is_open(), "open " + filePath + " failed");
     string line;
     vector<string> tmp;
     vector<string> tmp2;
     //Load startProb
-    XCHECK(GetLine(ifile, line));
+    ASSERT(GetLine(ifile, line));
     Split(line, tmp, " ");
-    XCHECK(tmp.size() == STATUS_SUM);
+    ASSERT(tmp.size() == STATUS_SUM);
     for (size_t j = 0; j< tmp.size(); j++) {
       startProb[j] = atof(tmp[j].c_str());
     }
 
     //Load transProb
     for (size_t i = 0; i < STATUS_SUM; i++) {
-      XCHECK(GetLine(ifile, line));
+      ASSERT(GetLine(ifile, line));
       Split(line, tmp, " ");
-      XCHECK(tmp.size() == STATUS_SUM);
+      ASSERT(tmp.size() == STATUS_SUM);
       for (size_t j =0; j < STATUS_SUM; j++) {
         transProb[i][j] = atof(tmp[j].c_str());
       }
     }
 
     //Load emitProbB
-    XCHECK(GetLine(ifile, line));
-    XCHECK(LoadEmitProb(line, emitProbB));
+    ASSERT(GetLine(ifile, line));
+    ASSERT(LoadEmitProb(line, emitProbB));
 
     //Load emitProbE
-    XCHECK(GetLine(ifile, line));
-    XCHECK(LoadEmitProb(line, emitProbE));
+    ASSERT(GetLine(ifile, line));
+    ASSERT(LoadEmitProb(line, emitProbE));
 
     //Load emitProbM
-    XCHECK(GetLine(ifile, line));
-    XCHECK(LoadEmitProb(line, emitProbM));
+    ASSERT(GetLine(ifile, line));
+    ASSERT(LoadEmitProb(line, emitProbM));
 
     //Load emitProbS
-    XCHECK(GetLine(ifile, line));
-    XCHECK(LoadEmitProb(line, emitProbS));
+    ASSERT(GetLine(ifile, line));
+    ASSERT(LoadEmitProb(line, emitProbS));
   }
   double GetEmitProb(const EmitProbMap* ptMp, Rune key, 
         double defVal)const {
@@ -93,6 +95,7 @@ struct HMMModel {
     return false;
   }
   bool LoadEmitProb(const string& line, EmitProbMap& mp) {
+    SystemLogger();
     if (line.empty()) {
       return false;
     }
@@ -102,11 +105,11 @@ struct HMMModel {
     for (size_t i = 0; i < tmp.size(); i++) {
       Split(tmp[i], tmp2, ":");
       if (2 != tmp2.size()) {
-        XLOG(ERROR) << "emitProb illegal.";
+        log_error << "emitProb illegal.";
         return false;
       }
       if (!DecodeRunesInString(tmp2[0], unicode) || unicode.size() != 1) {
-        XLOG(ERROR) << "TransCode failed.";
+        log_error << "TransCode failed.";
         return false;
       }
       mp[unicode[0]] = atof(tmp2[1].c_str());

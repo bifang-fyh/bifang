@@ -98,6 +98,7 @@ int ProcessManager::daemonStart(int argc, char** argv,
                 break;
             }
             sleep(g_daemon_restart_interval->getValue());
+            LoggerMgr::GetInstance()->reopen();
             log_info << "child restart time=" << ++m_restartCount;
         }
     }

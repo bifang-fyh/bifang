@@ -11,9 +11,9 @@
 #include <cmath>
 #include <limits>
 #include "limonp/StringUtil.hpp"
-#include "limonp/Logging.hpp"
 #include "Unicode.hpp"
 #include "Trie.hpp"
+#include "log.h"
 
 namespace cppjieba {
 
@@ -74,11 +74,12 @@ class DictTrie {
 
   bool Find(const string& word)
   {
+    SystemLogger();
     const DictUnit *tmp = NULL;
     RuneStrArray runes;
     if (!DecodeRunesInString(word, runes))
     {
-      XLOG(ERROR) << "Decode failed.";
+      log_error << "Decode failed.";
     }
     tmp = Find(runes.begin(), runes.end());
     if (tmp == NULL)
@@ -139,11 +140,12 @@ class DictTrie {
   }
 
   void LoadUserDict(const string& filePaths) {
+    SystemLogger();
     vector<string> files = limonp::Split(filePaths, "|;");
     size_t lineno = 0;
     for (size_t i = 0; i < files.size(); i++) {
       ifstream ifs(files[i].c_str());
-      XCHECK(ifs.is_open()) << "open " << files[i] << " failed"; 
+      ASSERT_MSG(ifs.is_open(), "open " + files[i] + " failed");
       string line;
       
       for (; getline(ifs, line); lineno++) {
@@ -189,8 +191,9 @@ class DictTrie {
         const string& word, 
         double weight, 
         const string& tag) {
+    SystemLogger();
     if (!DecodeRunesInString(word, node_info.word)) {
-      XLOG(ERROR) << "Decode " << word << " failed.";
+      log_error << "Decode " << word << " failed.";
       return false;
     }
     node_info.weight = weight;
@@ -199,15 +202,16 @@ class DictTrie {
   }
 
   void LoadDict(const string& filePath) {
+    SystemLogger();
     ifstream ifs(filePath.c_str());
-    XCHECK(ifs.is_open()) << "open " << filePath << " failed.";
+    ASSERT_MSG(ifs.is_open(), "open " + filePath + " failed.");
     string line;
     vector<string> buf;
 
     DictUnit node_info;
     for (size_t lineno = 0; getline(ifs, line); lineno++) {
       Split(line, buf, " ");
-      XCHECK(buf.size() == DICT_COLUMN_NUM) << "split result illegal, line:" << line;
+      ASSERT_MSG(buf.size() == DICT_COLUMN_NUM, "split result illegal, line:" + line);
       MakeNodeInfo(node_info, 
             buf[0], 
             atof(buf[1].c_str()), 
@@ -221,7 +225,8 @@ class DictTrie {
   }
 
   void SetStaticWordWeights(UserWordWeightOption option) {
-    XCHECK(!static_node_infos_.empty());
+    SystemLogger();
+    ASSERT(!static_node_infos_.empty());
     vector<DictUnit> x = static_node_infos_;
     sort(x.begin(), x.end(), WeightCompare);
     min_weight_ = x[0].weight;

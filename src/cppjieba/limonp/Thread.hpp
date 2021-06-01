@@ -1,30 +1,32 @@
 #ifndef LIMONP_THREAD_HPP
 #define LIMONP_THREAD_HPP
 
-#include "Logging.hpp"
-#include "NonCopyable.hpp"
+#include "noncopyable.h"
 
 namespace limonp {
 
-class IThread: NonCopyable {
+class IThread: bifang::Noncopyable {
  public:
   IThread(): isStarted(false), isJoined(false) {
   }
   virtual ~IThread() {
+    SystemLogger();
     if(isStarted && !isJoined) {
-      XCHECK(!pthread_detach(thread_));
+      ASSERT(!pthread_detach(thread_));
     }
   };
 
   virtual void Run() = 0;
   void Start() {
-    XCHECK(!isStarted);
-    XCHECK(!pthread_create(&thread_, NULL, Worker, this));
+    SystemLogger();
+    ASSERT(!isStarted);
+    ASSERT(!pthread_create(&thread_, NULL, Worker, this));
     isStarted = true;
   }
   void Join() {
-    XCHECK(!isJoined);
-    XCHECK(!pthread_join(thread_, NULL));
+    SystemLogger();
+    ASSERT(!isJoined);
+    ASSERT(!pthread_join(thread_, NULL));
     isJoined = true;
   }
  private:

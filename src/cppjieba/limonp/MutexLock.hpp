@@ -2,18 +2,19 @@
 #define LIMONP_MUTEX_LOCK_HPP
 
 #include <pthread.h>
-#include "NonCopyable.hpp"
-#include "Logging.hpp"
+#include "noncopyable.h"
 
 namespace limonp {
 
-class MutexLock: NonCopyable {
+class MutexLock: bifang::Noncopyable {
  public:
   MutexLock() {
-    XCHECK(!pthread_mutex_init(&mutex_, NULL));
+    SystemLogger();
+    ASSERT(!pthread_mutex_init(&mutex_, NULL));
   }
   ~MutexLock() {
-    XCHECK(!pthread_mutex_destroy(&mutex_));
+    SystemLogger();
+    ASSERT(!pthread_mutex_destroy(&mutex_));
   }
   pthread_mutex_t* GetPthreadMutex() {
     return &mutex_;
@@ -21,17 +22,19 @@ class MutexLock: NonCopyable {
 
  private:
   void Lock() {
-    XCHECK(!pthread_mutex_lock(&mutex_));
+    SystemLogger();
+    ASSERT(!pthread_mutex_lock(&mutex_));
   }
   void Unlock() {
-    XCHECK(!pthread_mutex_unlock(&mutex_));
+    SystemLogger();
+    ASSERT(!pthread_mutex_unlock(&mutex_));
   }
   friend class MutexLockGuard;
 
   pthread_mutex_t mutex_;
 }; // class MutexLock
 
-class MutexLockGuard: NonCopyable {
+class MutexLockGuard: bifang::Noncopyable {
  public:
   explicit MutexLockGuard(MutexLock & mutex)
     : mutex_(mutex) {
@@ -44,7 +47,7 @@ class MutexLockGuard: NonCopyable {
   MutexLock & mutex_;
 }; // class MutexLockGuard
 
-#define MutexLockGuard(x) XCHECK(false);
+//#define MutexLockGuard(x) XCHECK(false);
 
 } // namespace limonp
 

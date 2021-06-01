@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include "Jieba.hpp"
+#include "log.h"
 
 namespace cppjieba {
   using namespace limonp;
@@ -122,6 +123,7 @@ namespace cppjieba {
     }
 
     void Extract(const string& sentence, vector<Word>& keywords, size_t topN, size_t span=5,size_t rankTime=10) const {
+      SystemLogger();
       vector<string> words;
       segment_.Cut(sentence, words);
 
@@ -145,7 +147,7 @@ namespace cppjieba {
         wordmap[words[i]].offsets.push_back(t);
       }
       if (offset != sentence.size()) {
-        XLOG(ERROR) << "words illegal";
+        log_error << "words illegal";
         return;
       }
 
@@ -163,8 +165,9 @@ namespace cppjieba {
     }
   private:
     void LoadStopWordDict(const string& filePath) {
+      SystemLogger();
       ifstream ifs(filePath.c_str());
-      XCHECK(ifs.is_open()) << "open " << filePath << " failed";
+      ASSERT_MSG(ifs.is_open(), "open " + filePath + " failed");
       string line ;
       while (getline(ifs, line)) {
         stopWords_.insert(line);

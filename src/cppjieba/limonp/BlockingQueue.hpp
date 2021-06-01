@@ -3,10 +3,11 @@
 
 #include <queue>
 #include "Condition.hpp"
+#include "noncopyable.h"
 
 namespace limonp {
 template<class T>
-class BlockingQueue: NonCopyable {
+class BlockingQueue: bifang::Noncopyable {
  public:
   BlockingQueue()
     : mutex_(), notEmpty_(mutex_), queue_() {

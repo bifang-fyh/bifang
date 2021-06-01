@@ -1,9 +1,9 @@
 #ifndef CPPJIEBA_SEGMENTBASE_H
 #define CPPJIEBA_SEGMENTBASE_H
 
-#include "limonp/Logging.hpp"
 #include "PreFilter.hpp"
 #include <cassert>
+#include "log.h"
 
 
 namespace cppjieba {
@@ -15,7 +15,8 @@ using namespace limonp;
 class SegmentBase {
  public:
   SegmentBase() {
-    XCHECK(ResetSeparators(SPECIAL_SEPARATORS));
+    SystemLogger();
+    ASSERT(ResetSeparators(SPECIAL_SEPARATORS));
   }
   virtual ~SegmentBase() {
   }
@@ -23,15 +24,16 @@ class SegmentBase {
   virtual void Cut(const string& sentence, vector<string>& words) const = 0;
 
   bool ResetSeparators(const string& s) {
+    SystemLogger();
     symbols_.clear();
     RuneStrArray runes;
     if (!DecodeRunesInString(s, runes)) {
-      XLOG(ERROR) << "decode " << s << " failed";
+      log_error << "decode " << s << " failed";
       return false;
     }
     for (size_t i = 0; i < runes.size(); i++) {
       if (!symbols_.insert(runes[i].rune).second) {
-        XLOG(ERROR) << s.substr(runes[i].offset, runes[i].len) << " already exists";
+        log_error << s.substr(runes[i].offset, runes[i].len) << " already exists";
         return false;
       }
     }

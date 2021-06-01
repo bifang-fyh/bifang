@@ -4,6 +4,7 @@
 #include "limonp/StringUtil.hpp"
 #include "SegmentTagged.hpp"
 #include "DictTrie.hpp"
+#include "log.h"
 
 namespace cppjieba {
 using namespace limonp;
@@ -30,12 +31,13 @@ class PosTagger {
   }
 
   string LookupTag(const string &str, const SegmentTagged& segment) const {
+    SystemLogger();
     const DictUnit *tmp = NULL;
     RuneStrArray runes;
     const DictTrie * dict = segment.GetDictTrie();
     assert(dict != NULL);
       if (!DecodeRunesInString(str, runes)) {
-        XLOG(ERROR) << "Decode failed.";
+        log_error << "Decode failed.";
         return POS_X;
       }
       tmp = dict->Find(runes.begin(), runes.end());

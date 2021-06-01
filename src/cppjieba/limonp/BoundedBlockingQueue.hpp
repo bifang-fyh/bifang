@@ -2,11 +2,12 @@
 #define LIMONP_BOUNDED_BLOCKING_QUEUE_HPP
 
 #include "BoundedQueue.hpp"
+#include "noncopyable.h"
 
 namespace limonp {
 
 template<typename T>
-class BoundedBlockingQueue : NonCopyable {
+class BoundedBlockingQueue : bifang::Noncopyable {
  public:
   explicit BoundedBlockingQueue(size_t maxSize)
     : mutex_(),
