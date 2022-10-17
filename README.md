@@ -132,6 +132,8 @@ make test
 * doxygen模块：doxygen是一种开源跨平台的，以类似JavaDoc风格描述的文档系统。doxygen可以从一套归档源文件开始，生成HTML格式的在线类浏览器，或离线的LATEX、RTF参考手册。这里使用doxygen生成本框架的html说明文档，访问格式：http://ip:port/doxygen/, 由于生成的文档比较庞大，故需要使用者自行生成，doxygen标准配置文件就是源代码根目录下的doxyconfig文件（需要自行改写html生成目录，并将doxygen应用模块的ROOT_PATH宏改写为该目录）
 
 
+## 测试
+
 
 作者：bifang
 
